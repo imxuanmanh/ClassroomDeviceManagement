@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 import Dashboard from '@/views/Dashboard.vue'
 import UserManagement from '@/views/UserManagement.vue'
 import EquipmentManagement from '@/views/EquipmentManagement.vue'
