@@ -1,2 +1,0 @@
-1.Khi ấn vào một đường link thì mở sang trang mới thì dùng thẻ target = "_blank"
-2.Muốn xem một trang web nào đó sử dung màu gì và font gì thì ấn phím 12 rồi vào phần cài đặt chọn more tool rồi chọn CSS overview rồi chọn capture overview 
