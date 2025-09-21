@@ -1,4 +1,4 @@
-<!-- 
+<!--
   TRANG TỔNG QUAN (DASHBOARD)
   - Hiển thị thống kê tổng quan về thiết bị
   - Thẻ số liệu: tổng thiết bị, đang mượn, khả dụng, lượt mượn
@@ -6,8 +6,11 @@
 -->
 <template>
   <div class="home">
-    <h2>Tổng quan</h2>
-    
+    <header class="page-header">
+      <h2>Tổng quan</h2>
+      <div class="actions"></div>
+    </header>
+
     <!-- Thẻ thống kê tổng quan -->
     <div class="stats">
       <StatCard title="Thiết bị" :value="stats.total.toString()" />
@@ -65,60 +68,82 @@
 </template>
 
 <script>
+import { useHistoryStore } from '@/stores/history.js'
+import { deviceApi } from '@/config/api.js'
 export default {
   name: 'BorrowPage',
   data() {
     return {
-      // Danh sách thiết bị mẫu để demo
-      devices: [
-        {
-          id: 'LAP001',
-          name: 'Laptop Dell Inspiron 15',
-          type: 'Laptop',
-          status: 'Khả dụng',
-          borrower: '-',
-          borrowDate: '-',
-        },
-        {
-          id: 'PJ002',
-          name: 'Máy chiếu Epson X05',
-          type: 'Máy chiếu',
-          status: 'Đang mượn',
-          borrower: 'Nguyễn Văn A',
-          borrowDate: '2025-09-10',
-        },
-      ],
+      // Danh sách thiết bị lấy từ API
+      devices: [],
       // Form dữ liệu để thêm/sửa thiết bị
       form: { id: '', name: '', type: '' },
       // Index của thiết bị đang được sửa (null nếu đang thêm mới)
       editingIndex: null,
+      loading: false,
+      error: '',
     }
   },
+  async created() {
+    await this.fetchDevices()
+  },
   methods: {
+    async fetchDevices() {
+      this.loading = true
+      this.error = ''
+      try {
+        const list = await deviceApi.getAll()
+        // Chuẩn hóa về cấu trúc mà bảng đang hiển thị
+        this.devices = (Array.isArray(list) ? list : []).map((d) => ({
+          id: d.deviceId || d.id || '',
+          name: d.deviceName || d.name || '',
+          type: d.deviceType || d.type || '',
+          status: d.status || 'Khả dụng',
+          borrower: d.borrower || '-',
+          borrowDate: d.borrowDate || '-',
+        }))
+      } catch (err) {
+        console.error(err)
+        this.error = 'Không thể tải danh sách thiết bị'
+      } finally {
+        this.loading = false
+      }
+    },
     /**
      * Lưu thiết bị (thêm mới hoặc cập nhật)
      * Kiểm tra dữ liệu đầu vào trước khi lưu
      */
-    saveDevice() {
-      if (this.form.id && this.form.name && this.form.type) {
+    async saveDevice() {
+      if (!(this.form.id && this.form.name && this.form.type)) return
+      this.loading = true
+      this.error = ''
+      try {
         if (this.editingIndex !== null) {
-          // Cập nhật thiết bị hiện có
-          Object.assign(this.devices[this.editingIndex], this.form)
+          const current = this.devices[this.editingIndex]
+          const deviceId = current?.id
+          await deviceApi.update(deviceId, {
+            deviceId,
+            deviceName: this.form.name,
+            deviceType: this.form.type,
+          })
           this.editingIndex = null
         } else {
-          // Thêm thiết bị mới với trạng thái mặc định
-          this.devices.push({
-            ...this.form,
-            status: 'Khả dụng',
-            borrower: '-',
-            borrowDate: '-',
+          await deviceApi.create({
+            deviceId: this.form.id,
+            deviceName: this.form.name,
+            deviceType: this.form.type,
           })
         }
-        // Reset form sau khi lưu
+        await this.fetchDevices()
         this.form = { id: '', name: '', type: '' }
+      } catch (err) {
+        console.error(err)
+        this.error = 'Không thể lưu thiết bị'
+      } finally {
+        this.loading = false
       }
     },
-    
+
     /**
      * Hủy chế độ sửa và reset form
      */
@@ -126,7 +151,7 @@ export default {
       this.form = { id: '', name: '', type: '' }
       this.editingIndex = null
     },
-    
+
     /**
      * Bắt đầu sửa thiết bị
      * @param {Object} device - Thiết bị cần sửa
@@ -136,65 +161,109 @@ export default {
       this.form = { ...device }
       this.editingIndex = index
     },
-    
+
     /**
      * Xóa thiết bị khỏi danh sách
      * @param {number} index - Vị trí trong mảng
      */
-    deleteDevice(index) {
-      this.devices.splice(index, 1)
+    async deleteDevice(index) {
+      this.loading = true
+      this.error = ''
+      try {
+        const id = this.devices[index]?.id
+        await deviceApi.delete(id)
+        await this.fetchDevices()
+      } catch (err) {
+        console.error(err)
+        this.error = 'Không thể xóa thiết bị'
+      } finally {
+        this.loading = false
+      }
     },
-    
+
     /**
      * Xử lý mượn thiết bị
      * Cập nhật trạng thái và ghi log vào lịch sử
      * @param {Object} device - Thiết bị được mượn
      */
-    borrowDevice(device) {
+    async borrowDevice(device) {
       const borrowerName = 'Nguyễn Văn B'
-      device.status = 'Đang mượn'
-      device.borrower = borrowerName
-      device.borrowDate = new Date().toISOString().split('T')[0]
-      
-      // Ghi log vào lịch sử
+      const borrowDate = new Date().toISOString().split('T')[0]
+      this.loading = true
+      this.error = ''
       try {
-        const { useHistoryStore } = require('@/stores/history.js')
-        const store = useHistoryStore()
-        store.logBorrow({
+        // Cập nhật trạng thái thiết bị thông qua API
+        await deviceApi.update(device.id, {
           deviceId: device.id,
           deviceName: device.name,
-          borrowerId: '-',
-          borrowerName,
-          date: device.borrowDate,
+          deviceType: device.type,
+          status: 'Đang mượn',
+          borrower: borrowerName,
+          borrowDate,
         })
-      } catch (_) {}
+        await this.fetchDevices()
+
+        // Ghi log vào lịch sử
+        try {
+          const store = useHistoryStore()
+          store.logBorrow({
+            deviceId: device.id,
+            deviceName: device.name,
+            borrowerId: '-',
+            borrowerName,
+            date: borrowDate,
+          })
+        } catch (err) {
+          console.warn('Ghi lịch sử mượn thất bại', err)
+        }
+      } catch (err) {
+        console.error(err)
+        this.error = 'Không thể cập nhật trạng thái mượn thiết bị'
+      } finally {
+        this.loading = false
+      }
     },
-    
+
     /**
      * Xử lý trả thiết bị
      * Cập nhật trạng thái và ghi log vào lịch sử
      * @param {Object} device - Thiết bị được trả
      */
-    returnDevice(device) {
+    async returnDevice(device) {
       const date = new Date().toISOString().split('T')[0]
-      
-      // Ghi log vào lịch sử
+      this.loading = true
+      this.error = ''
       try {
-        const { useHistoryStore } = require('@/stores/history.js')
-        const store = useHistoryStore()
-        store.logReturn({
+        // Cập nhật trạng thái thiết bị thông qua API
+        await deviceApi.update(device.id, {
           deviceId: device.id,
           deviceName: device.name,
-          borrowerId: '-',
-          borrowerName: device.borrower || '-',
-          date,
+          deviceType: device.type,
+          status: 'Khả dụng',
+          borrower: '-',
+          borrowDate: '-',
         })
-      } catch (_) {}
-      
-      // Reset trạng thái thiết bị
-      device.status = 'Khả dụng'
-      device.borrower = '-'
-      device.borrowDate = '-'
+        await this.fetchDevices()
+
+        // Ghi log vào lịch sử
+        try {
+          const store = useHistoryStore()
+          store.logReturn({
+            deviceId: device.id,
+            deviceName: device.name,
+            borrowerId: '-',
+            borrowerName: device.borrower || '-',
+            date,
+          })
+        } catch (err) {
+          console.warn('Ghi lịch sử trả thất bại', err)
+        }
+      } catch (err) {
+        console.error(err)
+        this.error = 'Không thể cập nhật trạng thái trả thiết bị'
+      } finally {
+        this.loading = false
+      }
     },
   },
   computed: {
@@ -204,20 +273,24 @@ export default {
      */
     stats() {
       const total = this.devices.length
-      const borrowed = this.devices.filter(d => d.status !== 'Khả dụng').length
+      const borrowed = this.devices.filter((d) => d.status !== 'Khả dụng').length
       const available = total - borrowed
       let recentBorrows = 0
-      
+
       // Lấy số lượt mượn trong 30 ngày gần nhất
       try {
-        const { useHistoryStore } = require('@/stores/history.js')
         const store = useHistoryStore()
-        const from = new Date(); from.setDate(from.getDate() - 30)
-        recentBorrows = store.records.filter(r => r.type==='borrow' && new Date(r.date) >= from).length
-      } catch (_) {}
-      
+        const from = new Date()
+        from.setDate(from.getDate() - 30)
+        recentBorrows = store.records.filter(
+          (r) => r.type === 'borrow' && new Date(r.date) >= from,
+        ).length
+      } catch (err) {
+        console.warn('Tính lượt mượn gần đây thất bại', err)
+      }
+
       return { total, borrowed, available, recentBorrows }
-    }
+    },
   },
 }
 </script>
@@ -227,8 +300,30 @@ import StatCard from '@/components/Dashboard/StatCard.vue'
 </script>
 
 <style scoped>
-.home { padding: 16px 12px; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+.home {
+  padding: 16px 12px;
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-header h2 {
+  margin: 0;
+  color: #111827;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
 .form-box {
   margin-bottom: 15px;

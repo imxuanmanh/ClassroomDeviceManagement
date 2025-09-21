@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import Dashboard from '@/views/Dashboard.vue'
 import UserManagement from '@/views/UserManagement.vue'
-import EquipmentManagement from '@/views/EquipmentManagement.vue'
+import DeviceManagement from '@/views/DeviceManagement.vue'
 import History from '@/views/History.vue'
 import Reports from '@/views/Reports.vue'
 import Login from '@/views/Login.vue'
@@ -16,9 +16,9 @@ const router = createRouter({
       component: Dashboard,
     },
     {
-    path: '/equipment',
-    name: 'equipment',
-    component: EquipmentManagement,
+      path: '/devices',
+      name: 'devices',
+      component: DeviceManagement,
     },
     {
       path: '/users',
