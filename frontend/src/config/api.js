@@ -75,9 +75,34 @@ export const categoryApi = {
 }
 
 // API cho mẫu thiết bị
+// (Đã được định nghĩa bên dưới, xóa bản này để tránh trùng lặp)
+// export const modelApi = {
+//   getAll: () => apiCall('/models'),
+//   getById: (id) => apiCall(`/models/${id}`),
+//   create: (data) => apiCall('/models', {
+//     method: 'POST',
+//     body: JSON.stringify(data)
+//   })
+// }
+
+/**
+ * API QUẢN LÝ INSTANCE (Thiết bị cụ thể)
+ */
+export const instanceApi = {
+  // Thêm mới một instance thiết bị
+  create: (data) =>
+    apiCall('/instances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+}
+
+/**
+ * API cho mẫu thiết bị (bổ sung lấy chi tiết model)
+ */
 export const modelApi = {
   getAll: () => apiCall('/models'),
-  getById: (id) => apiCall(`/models/${id}`),
+  getById: (id) => apiCall(`/models/${id}`), // Đã có, giữ nguyên
   create: (data) =>
     apiCall('/models', {
       method: 'POST',
