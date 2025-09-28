@@ -12,11 +12,11 @@ export const API_CONFIG = {
 
   // Danh sách các endpoint API
   ENDPOINTS: {
-    DEVICES: '/device',      // Quản lý thiết bị
-    USERS: '/users',         // Quản lý người dùng
-    BORROWS: '/borrows',     // Quản lý mượn/trả
-    HISTORY: '/history',     // Lịch sử hoạt động
-    REPORTS: '/reports'      // Báo cáo thống kê
+    DEVICES: '/device', // Quản lý thiết bị
+    USERS: '/users', // Quản lý người dùng
+    BORROWS: '/borrows', // Quản lý mượn/trả
+    HISTORY: '/history', // Lịch sử hoạt động
+    REPORTS: '/reports', // Báo cáo thống kê
   },
 
   // Thời gian chờ tối đa cho mỗi request (10 giây)
@@ -25,8 +25,8 @@ export const API_CONFIG = {
   // Headers mặc định cho tất cả request
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    Accept: 'application/json',
+  },
 }
 
 /**
@@ -49,7 +49,7 @@ export async function apiCall(endpoint, options = {}) {
   const config = {
     timeout: API_CONFIG.TIMEOUT,
     headers: { ...API_CONFIG.DEFAULT_HEADERS, ...options.headers },
-    ...options
+    ...options,
   }
 
   try {
@@ -71,10 +71,21 @@ export async function apiCall(endpoint, options = {}) {
 // API cho loại thiết bị
 export const categoryApi = {
   getAll: () => apiCall('/categories'),
-  getModelsByCategory: (id) => apiCall(`/models/${id}`)
+  getModelsByCategory: (id) => apiCall(`/models/${id}`),
 }
-export const deviceApi = {
 
+// API cho mẫu thiết bị
+export const modelApi = {
+  getAll: () => apiCall('/models'),
+  getById: (id) => apiCall(`/models/${id}`),
+  create: (data) =>
+    apiCall('/models', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+}
+
+export const deviceApi = {
   // Lấy danh sách tất cả thiết bị
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.DEVICES),
 
@@ -82,21 +93,24 @@ export const deviceApi = {
   getById: (id) => apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`),
 
   // Tạo thiết bị mới
-  create: (data) => apiCall(API_CONFIG.ENDPOINTS.DEVICES, {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  create: (data) =>
+    apiCall(API_CONFIG.ENDPOINTS.DEVICES, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Cập nhật thông tin thiết bị
-  update: (id, data) => apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data)
-  }),
+  update: (id, data) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 
   // Xóa thiết bị
-  delete: (id) => apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
-    method: 'DELETE'
-  })
+  delete: (id) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
+      method: 'DELETE',
+    }),
 }
 
 /**
@@ -108,21 +122,24 @@ export const userApi = {
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.USERS),
 
   // Tạo người dùng mới
-  create: (data) => apiCall(API_CONFIG.ENDPOINTS.USERS, {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  create: (data) =>
+    apiCall(API_CONFIG.ENDPOINTS.USERS, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Cập nhật thông tin người dùng
-  update: (id, data) => apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data)
-  }),
+  update: (id, data) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 
   // Xóa người dùng
-  delete: (id) => apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
-    method: 'DELETE'
-  })
+  delete: (id) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
+      method: 'DELETE',
+    }),
 }
 
 /**
@@ -134,15 +151,17 @@ export const borrowApi = {
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.BORROWS),
 
   // Tạo giao dịch mượn mới
-  create: (data) => apiCall(API_CONFIG.ENDPOINTS.BORROWS, {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  create: (data) =>
+    apiCall(API_CONFIG.ENDPOINTS.BORROWS, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Xử lý trả thiết bị
-  return: (id) => apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${id}/return`, {
-    method: 'POST'
-  })
+  return: (id) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${id}/return`, {
+      method: 'POST',
+    }),
 }
 
 /**
@@ -157,7 +176,7 @@ export const historyApi = {
   getByDevice: (deviceId) => apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/device/${deviceId}`),
 
   // Lấy lịch sử theo người dùng
-  getByUser: (userId) => apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/user/${userId}`)
+  getByUser: (userId) => apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/user/${userId}`),
 }
 
 /**
@@ -170,5 +189,5 @@ export const reportApi = {
 
   // Lấy báo cáo mượn theo khoảng thời gian
   getBorrowsByPeriod: (startDate, endDate) =>
-    apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/borrows?start=${startDate}&end=${endDate}`)
+    apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/borrows?start=${startDate}&end=${endDate}`),
 }
