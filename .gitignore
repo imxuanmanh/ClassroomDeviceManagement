@@ -1,0 +1,66 @@
+# Build results
+bin/
+obj/
+Debug/
+Release/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio files
+.vs/
+.vscode/
+
+# Auto-generated files
+*.generated.cs
+
+# ASP.NET temporary files
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet Packages
+*.nupkg
+packages/
+.nuget/
+
+# Resharper
+_ReSharper*/
+*.DotSettings.user
+
+# StyleCop
+StyleCopReport.xml
+
+# Publish output
+publish/
+
+# IIS Express
+/.vs/
+/iisexpress/
+
+# Rider IDE
+.idea/
+
+# Dotnet watch
+.dotnetwatch/
+
+# Logs
+*.log
+
+# Database
+*.mdf
+*.ldf
+
+# Others
+*.db
+*.sqlite
+
+# Node dependencies (if using frontend tooling)
+node_modules/
+
+# Others (optional)
+*.vspscc
+*.vssscc
