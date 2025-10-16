@@ -78,10 +78,14 @@ builder.Services.AddScoped<IDeviceCategoryRepository, DeviceCategoryRepository>(
 builder.Services.AddScoped<IDeviceModelRepository, DeviceModelRepository>();
 builder.Services.AddScoped<IDeviceInstanceRepository, DeviceInstanceRepository>();
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 // Đăng ký Services
 builder.Services.AddScoped<IDeviceCategoryService, DeviceCategoryService>();
 builder.Services.AddScoped<IDeviceModelService, DeviceModelService>();
 builder.Services.AddScoped<IDeviceInstanceService,  DeviceInstanceService>();
+
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Đăng ký Controllers
 builder.Services.AddControllers();
@@ -93,6 +97,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.UseDeveloperExceptionPage();
 }
 
 
