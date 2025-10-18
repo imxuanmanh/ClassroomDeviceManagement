@@ -32,45 +32,45 @@
 
       <!-- Danh sách category (ID, Name). Bấm để xem danh sách model -->
       <div class="category">
-        <div class="category-card" v-for="category in categories" :key="category.id">
-          <div class="category-header">
-            <div class="info">
-              <div class="type">{{ category.name || 'Không xác định' }}</div>
-            </div>
-            <button class="toggle" @click="toggleType(category.id)">
-              {{ isExpanded(category.id) ? 'Ẩn' : 'Xem tất cả' }}
-            </button>
-          </div>
-          <div class="category-body" v-if="isExpanded(category.id)">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>ModelID</th>
-                  <th>ModelName</th>
-                  <th>Specification</th>
-                  <th>Storage Location</th>
-                  <th>Total</th>
-                  <th>Available</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="m in modelsByCategory[category.id] || []" :key="m.modelId">
-                  <td>{{ m.modelId }}</td>
-                  <td>{{ m.modelName }}</td>
-                  <td>{{ m.specifications }}</td>
-                  <td>{{ m.storageLocation }}</td>
-                  <td>{{ m.totalQuantity }}</td>
-                  <td>{{ m.availableQuantity }}</td>
-                </tr>
-                <tr v-if="(modelsByCategory[category.id] || []).length === 0">
-                  <td colspan="6" style="text-align: center">Không có dữ liệu</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
+  <div class="category-card" v-for="category in categories" :key="category.id">
+    <div class="category-header">
+      <div class="info">
+        <div class="type">{{ category.name || 'Không xác định' }}</div>
       </div>
+      <button class="toggle" @click="toggleType(category.id)">
+        {{ isExpanded(category.id) ? 'Ẩn' : 'Xem tất cả' }}
+      </button>
+    </div>
+    <div class="category-body" v-if="isExpanded(category.id)">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên thiết bị</th>
+            <th>Thông số kỹ thuật</th>
+            <th>Vị trí lưu trữ</th>
+            <th>Tổng số lượng</th>
+            <th>Số lượng khả dụng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="m in modelsByCategory[category.id] || []" :key="m.modelId">
+            <td>{{ m.modelId }}</td>
+            <td>{{ m.modelName }}</td>
+            <td>{{ m.specifications }}</td>
+            <td>{{ m.storageLocation }}</td>
+            <td>{{ m.totalQuantity }}</td>
+            <td>{{ m.availableQuantity }}</td>
+          </tr>
+          <tr v-if="(modelsByCategory[category.id] || []).length === 0">
+            <td colspan="6" style="text-align: center">Không có dữ liệu</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
+</div>
 
       <!-- Phân trang tổng thể (áp dụng khi xem dạng danh sách, hiện tắt trong chế độ nhóm) -->
       <!--

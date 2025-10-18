@@ -6,25 +6,22 @@
 -->
 <template>
   <aside class="sidebar">
-    <!-- Logo -->
-    <div class="logo">
-      <router-link to="/">
-        <span class="material-icons">computer</span>
-        <span class="label">Quản lý Thiết Bị</span>
-      </router-link>
+    <!-- Admin Login -->
+    <div class="nav">
+      <div class="login-group">
+        <router-link to="/login" class="login-link">
+          <span class="material-icons login">account_circle</span>
+          <span class="label">Đăng nhập</span>
+        </router-link>
+      </div>
     </div>
-
-    <!-- Menu -->
+    <!-- Menu điều hướng chính -->
     <nav class="nav">
+      <!-- Lặp qua từng nhóm menu -->
       <template v-for="group in menu" :key="group.title">
         <div class="group">
           <div class="group-title">{{ group.title }}</div>
-          <router-link
-            v-for="item in group.items"
-            :key="item.to"
-            :to="item.to"
-            active-class="active"
-          >
+          <router-link v-for="item in group.items" :key="item.to" :to="item.to">
             <span class="material-icons">{{ item.icon }}</span>
             <span class="label">{{ item.label }}</span>
           </router-link>
@@ -37,23 +34,27 @@
 <script setup>
 import { computed } from 'vue'
 
+/**
+ * Cấu hình menu điều hướng
+ * Được tổ chức theo nhóm chức năng để dễ quản lý
+ */
 const menu = computed(() => [
   {
     title: 'Tổng quan',
-    items: [{ to: '/', icon: 'analytics', label: 'Dashboard' }],
+    items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
   },
   {
     title: 'Quản lý',
     items: [
-      { to: '/devices', icon: 'devices', label: 'Device' },
-      { to: '/users', icon: 'person', label: 'Người mượn' },
+      { to: '/devices', icon: 'devices', label: 'Thiết bị' },
+      { to: '/users', icon: 'person', label: 'Người dùng' },
     ],
   },
   {
     title: 'Theo dõi',
     items: [
       { to: '/history', icon: 'history', label: 'Lịch sử' },
-      { to: '/reports', icon: 'report', label: 'Báo cáo' },
+      { to: '/reports', icon: 'report', label: 'Thống kê' },
     ],
   },
 ])
@@ -62,13 +63,32 @@ const menu = computed(() => [
 <style scoped>
 .sidebar {
   height: 100%;
-  background: #0d1b2a;
-  color: #e0e0e0;
+  background: #ffffff;
+  color: #000000;
   padding: 16px 12px;
   box-sizing: border-box;
+  border-right: 1px solid #eee;
 }
 .material-icons {
-  color: inherit;
+  color: black;
+  margin-bottom: 0;
+  vertical-align: middle;
+  margin-right: 12px;
+}
+.material-icons.login {
+  font-size: 50px;
+  margin-bottom: 4px;
+}
+.login-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.login-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px;
 }
 .nav {
   margin-top: 16px;
@@ -78,10 +98,10 @@ const menu = computed(() => [
 }
 .group-title {
   font-size: 12px;
-  color: #4a4a4a;
+  color: #6b7280;
   padding: 0 12px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   margin-bottom: 6px;
   font-weight: 600;
 }
@@ -89,43 +109,14 @@ const menu = computed(() => [
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #334155; /*Chỉnh màu tất cả chữ menu*/
+  color: #000000;
   text-decoration: none;
   padding: 10px 12px;
   border-radius: 8px;
-  font-size: 15px;
-  transition:
-    background 0.2s,
-    color 0.2s;
+  font-size: 16px;
 }
-
-.nav a:hover {
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.nav a.active {
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
-}
-
 .nav a.router-link-active {
   font-weight: 600;
-}
-.logo a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 700;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 18px;
-}
-.logo {
-  margin-bottom: 16px;
 }
 .label {
   white-space: nowrap;

@@ -1,13 +1,20 @@
-<template>
-  <Layout />
+<!-- <template>
+  <Layout v-if="auth.isAuthenticated" />
+  <router-view v-else />
 </template>
 
-<script>
+<script setup>
 import Layout from '@/components/Layout/Layout.vue'
+import { useAuthStore } from '@/stores/auth.js'
+const auth = useAuthStore()
+</script> -->
 
-export default {
-  name: 'App',
-  components: { Layout }
-}
+<template>
+  <Layout>
+    <router-view />
+  </Layout>
+</template>
+
+<script setup>
+import Layout from '@/components/Layout/Layout.vue'
 </script>
-

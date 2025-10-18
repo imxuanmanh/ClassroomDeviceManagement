@@ -5,6 +5,7 @@
   - Bảng demo thao tác mượn/trả thiết bị
 -->
 <template>
+  <section class="dashboard">
   <div class="home">
     <header class="page-header">
       <h2>Tổng quan</h2>
@@ -13,19 +14,10 @@
 
     <!-- Thẻ thống kê tổng quan -->
     <div class="stats">
-      <!-- <StatCard title="Thiết bị" :value="stats.total.toString()" />
+      <StatCard title="Thiết bị" :value="stats.total.toString()" />
       <StatCard title="Đang mượn" :value="stats.borrowed.toString()" />
       <StatCard title="Khả dụng" :value="stats.available.toString()" />
-      <StatCard title="Lượt mượn (30 ngày)" :value="stats.recentBorrows.toString()" /> -->
-
-      <StatCard
-        v-for="cfg in statConfigs"
-        :key="cfg.key"
-        :title="cfg.title"
-        :value="stats[cfg.key].toString()"
-        :color="cfg.color"
-        :icon="cfg.icon"
-      />
+      <StatCard title="Lượt mượn (30 ngày)" :value="stats.recentBorrows.toString()" />
     </div>
 
     <!-- Form thêm/sửa thiết bị demo -->
@@ -74,6 +66,7 @@
       </tbody>
     </table>
   </div>
+  </section>
 </template>
 
 <script>
@@ -306,12 +299,6 @@ export default {
 
 <script setup>
 import StatCard from '@/components/Dashboard/StatCard.vue'
-const statConfigs = [
-  { key: 'total', title: 'Thiết bị', color: '#3b82f6', icon: '📦' },
-  { key: 'borrowed', title: 'Đang mượn', color: '#f97316', icon: '🔄' },
-  { key: 'available', title: 'Khả dụng', color: '#10b981', icon: '✅' },
-  { key: 'recentBorrows', title: 'Lượt mượn (30 ngày)', color: '#6366f1', icon: '📊' },
-]
 </script>
 
 <style scoped>
