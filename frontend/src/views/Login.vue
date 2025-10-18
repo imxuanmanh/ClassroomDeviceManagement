@@ -29,19 +29,42 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 
+// async function onSubmit() {
+//   try {
+//     // Gửi request đăng nhập lên server với username và password
+//     const res = await authApi.login({ username: username.value, password: password.value })
+//     console.log('Kết quả trả về từ API:', res) // <-- Thêm dòng này để log kết quả
+//     // Server trả về { token, role, expires }
+//     if (res && res.token && res.role) {
+//       auth.login(res.token, res.role)
+//       const redirect = route.query.redirect
+//       if (redirect) {
+//         router.replace(String(redirect))
+//       } else if (res.role.toLowerCase() === 'admin') {
+//         router.replace('/')
+//       } else {
+//         router.replace('/user-borrow')
+//       }
+//     } else {
+//       alert('Sai tài khoản hoặc mật khẩu!')
+//     }
+//   } catch (err) {
+//     alert('Đăng nhập thất bại!')
+//   }
+// }
+
 async function onSubmit() {
   try {
-    // Gửi request đăng nhập lên server với username và password
     const res = await authApi.login({ username: username.value, password: password.value })
-    console.log('Kết quả trả về từ API:', res) // <-- Thêm dòng này để log kết quả
-    // Server trả về { token, role, expires }
-    if (res && res.token && res.role) {
-      auth.login(res.token, res.role)
+    console.log('Kết quả trả về từ API:', res)
+
+    if (res && res.token && res.user) {
+      auth.login(res.token, res.user) // <-- truyền user object
       const redirect = route.query.redirect
       if (redirect) {
         router.replace(String(redirect))
-      } else if (res.role.toLowerCase() === 'admin') {
-        router.replace('/')
+      } else if (res.user.roleId === 1) {
+        router.replace('/devices')
       } else {
         router.replace('/user-borrow')
       }
@@ -49,6 +72,7 @@ async function onSubmit() {
       alert('Sai tài khoản hoặc mật khẩu!')
     }
   } catch (err) {
+    console.error(err)
     alert('Đăng nhập thất bại!')
   }
 }

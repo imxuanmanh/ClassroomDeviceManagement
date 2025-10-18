@@ -9,10 +9,10 @@
     <!-- Admin Login -->
     <div class="nav">
       <div class="login-group">
-        <router-link to="/login" class="login-link">
-          <span class="material-icons login">account_circle</span>
-          <span class="label">Đăng nhập</span>
-        </router-link>
+        <span class="material-icons login">account_circle</span>
+        <span class="label">
+          {{ loginLabel }}
+        </span>
       </div>
     </div>
     <!-- Menu điều hướng chính -->
@@ -33,11 +33,16 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-/**
- * Cấu hình menu điều hướng
- * Được tổ chức theo nhóm chức năng để dễ quản lý
- */
+const auth = useAuthStore()
+
+const loginLabel = computed(() =>
+  auth.fullname && auth.fullname.trim() !== ''
+    ? auth.fullname
+    : 'Lỗi'
+)
+
 const menu = computed(() => [
   {
     title: 'Tổng quan',

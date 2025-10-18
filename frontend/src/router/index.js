@@ -6,8 +6,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      // redirect: '/login',
-      redirect: '/dashboard',
+      redirect: '/login',
+      // redirect: '/usermanagement',
     },
     {
       path: '/login',
@@ -52,7 +52,7 @@ const router = createRouter({
   ],
 })
 
-// // simple auth guard using localStorage token flag
+// simple auth guard using localStorage token flag
 // router.beforeEach((to, from, next) => {
 //   const auth = useAuthStore()
 //   if (to.meta.requiresAuth && !auth.isAuthenticated) {
@@ -61,5 +61,34 @@ const router = createRouter({
 //     next()
 //   }
 // })
+
+router.beforeEach((to, from, next) => {
+  const auth = useAuthStore()
+  const isLoggedIn = auth.isAuthenticated
+  const role = auth.role // lấy role từ Pinia (đã lưu khi login)
+
+  // Nếu route cần đăng nhập mà chưa login
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  // Nếu đã login → kiểm tra role
+  if (isLoggedIn) {
+    // Nếu là user mà lại vào trang của admin
+    if (
+      role === 'user' &&
+      ['/dashboard', '/devices', '/users', '/reports', '/history'].includes(to.path)
+    ) {
+      return next('/user-borrow')
+    }
+
+    // Nếu là admin mà lại vào trang user
+    if (role === 'admin' && ['/user-borrow'].includes(to.path)) {
+      return next('/dashboard')
+    }
+  }
+
+  next()
+})
 
 export default router
