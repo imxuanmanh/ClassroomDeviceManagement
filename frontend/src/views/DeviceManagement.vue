@@ -18,59 +18,57 @@
     </header>
 
     <div class="content">
-      <!-- Form thêm/sửa thiết bị -->
-      <div class="tools">
-        <DeviceForm
-          v-if="showForm"
-          :value="form"
-          :submit-text="editingIndex !== null ? 'Cập nhật' : 'Thêm'"
-          :show-cancel="true"
-          @submit="save"
-          @cancel="closeForm"
-        />
-      </div>
+      <!-- Modal form thêm/sửa thiết bị -->
+      <DeviceModal
+        v-if="showForm"
+        :value="form"
+        :title="editingIndex !== null ? 'Cập nhật thiết bị' : 'Thêm thiết bị mới'"
+        :submit-text="editingIndex !== null ? 'Cập nhật' : 'Thêm'"
+        @submit="save"
+        @close="closeForm"
+      />
 
       <!-- Danh sách category (ID, Name). Bấm để xem danh sách model -->
       <div class="category">
-  <div class="category-card" v-for="category in categories" :key="category.id">
-    <div class="category-header">
-      <div class="info">
-        <div class="type">{{ category.name || 'Không xác định' }}</div>
+        <div class="category-card" v-for="category in categories" :key="category.id">
+          <div class="category-header">
+            <div class="info">
+              <div class="type">{{ category.name || 'Không xác định' }}</div>
+            </div>
+            <button class="toggle" @click="toggleType(category.id)">
+              {{ isExpanded(category.id) ? 'Ẩn' : 'Xem tất cả' }}
+            </button>
+          </div>
+          <div class="category-body" v-if="isExpanded(category.id)">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tên thiết bị</th>
+                  <th>Thông số kỹ thuật</th>
+                  <th>Vị trí lưu trữ</th>
+                  <th>Tổng số lượng</th>
+                  <th>Số lượng khả dụng</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="m in modelsByCategory[category.id] || []" :key="m.modelId">
+                  <td>{{ m.modelId }}</td>
+                  <td>{{ m.modelName }}</td>
+                  <td>{{ m.specifications }}</td>
+                  <td>{{ m.storageLocation }}</td>
+                  <td>{{ m.totalQuantity }}</td>
+                  <td>{{ m.availableQuantity }}</td>
+                </tr>
+                <tr v-if="(modelsByCategory[category.id] || []).length === 0">
+                  <td colspan="6" style="text-align: center">Không có dữ liệu</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
       </div>
-      <button class="toggle" @click="toggleType(category.id)">
-        {{ isExpanded(category.id) ? 'Ẩn' : 'Xem tất cả' }}
-      </button>
-    </div>
-    <div class="category-body" v-if="isExpanded(category.id)">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tên thiết bị</th>
-            <th>Thông số kỹ thuật</th>
-            <th>Vị trí lưu trữ</th>
-            <th>Tổng số lượng</th>
-            <th>Số lượng khả dụng</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="m in modelsByCategory[category.id] || []" :key="m.modelId">
-            <td>{{ m.modelId }}</td>
-            <td>{{ m.modelName }}</td>
-            <td>{{ m.specifications }}</td>
-            <td>{{ m.storageLocation }}</td>
-            <td>{{ m.totalQuantity }}</td>
-            <td>{{ m.availableQuantity }}</td>
-          </tr>
-          <tr v-if="(modelsByCategory[category.id] || []).length === 0">
-            <td colspan="6" style="text-align: center">Không có dữ liệu</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
-</div>
 
       <!-- Phân trang tổng thể (áp dụng khi xem dạng danh sách, hiện tắt trong chế độ nhóm) -->
       <!--
@@ -85,7 +83,7 @@
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
-import DeviceForm from '@/components/Device/DeviceForm.vue'
+import DeviceModal from '@/components/Device/DeviceModal.vue'
 import { deviceApi, categoryApi } from '@/config/api'
 
 // Trạng thái dữ liệu
@@ -122,7 +120,7 @@ async function fetchCategories() {
   error.value = ''
   try {
     categories.value = await categoryApi.getAll()
-  } catch (err) {
+  } catch {
     error.value = 'Không thể tải danh sách loại thiết bị'
   } finally {
     loading.value = false
@@ -136,7 +134,7 @@ async function fetchDevices() {
   try {
     const data = await deviceApi.getAll()
     items.value = Array.isArray(data) ? data : []
-  } catch (err) {
+  } catch {
     error.value = 'Không thể tải danh sách thiết bị'
   } finally {
     loading.value = false
@@ -179,12 +177,6 @@ function openCreate() {
   }
 }
 
-function startEdit(d, absoluteIndex) {
-  showForm.value = true
-  editingIndex.value = absoluteIndex
-  form.value = { ...d }
-}
-
 function closeForm() {
   showForm.value = false
 }
@@ -201,22 +193,8 @@ async function save(payload) {
     }
     await fetchDevices()
     closeForm()
-  } catch (err) {
+  } catch {
     error.value = 'Không thể lưu thiết bị'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function remove(absoluteIndex) {
-  loading.value = true
-  error.value = ''
-  try {
-    const id = items.value[absoluteIndex]?.deviceId
-    await deviceApi.delete(id)
-    await fetchDevices()
-  } catch (err) {
-    error.value = 'Không thể xóa thiết bị'
   } finally {
     loading.value = false
   }

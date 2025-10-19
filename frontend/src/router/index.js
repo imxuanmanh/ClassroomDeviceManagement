@@ -6,8 +6,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login',
-      // redirect: '/usermanagement',
+      // redirect: '/login',
+      redirect: '/usermanagement',
     },
     {
       path: '/login',
@@ -51,16 +51,6 @@ const router = createRouter({
     },
   ],
 })
-
-// simple auth guard using localStorage token flag
-// router.beforeEach((to, from, next) => {
-//   const auth = useAuthStore()
-//   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-//     next({ path: '/login', query: { redirect: to.fullPath } })
-//   } else {
-//     next()
-//   }
-// })
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()

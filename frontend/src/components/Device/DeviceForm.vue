@@ -1,14 +1,55 @@
 <template>
   <form class="form" @submit.prevent="onSubmit">
-    <input v-model="model.deviceId" placeholder="Mã" />
-    <input v-model="model.deviceName" placeholder="Tên thiết bị" />
-    <input v-model="model.deviceType" placeholder="Loại" />
-    <input v-model="model.specification" placeholder="Thông số kỹ thuật" />
-    <input v-model="model.storageLocation" placeholder="Vị trí" />
-    <input v-model.number="model.totalQuantity" type="number" placeholder="Tổng SL" />
-    <input v-model.number="model.availableQuantity" type="number" placeholder="SL khả dụng" />
-    <button type="submit">{{ submitText }}</button>
-    <button type="button" v-if="showCancel" @click="$emit('cancel')">Hủy</button>
+    <div class="form-group">
+      <label>Mã thiết bị</label>
+      <input v-model="model.deviceId" placeholder="Nhập mã thiết bị" />
+    </div>
+    <div class="form-group">
+      <label>Tên thiết bị</label>
+      <input v-model="model.deviceName" placeholder="Nhập tên thiết bị" />
+    </div>
+    <div class="form-group">
+      <label>Loại thiết bị</label>
+      <input v-model="model.deviceType" placeholder="Nhập loại thiết bị" />
+    </div>
+    <div class="form-group">
+      <label>Thông số kỹ thuật</label>
+      <textarea
+        v-model="model.specification"
+        placeholder="Nhập thông số kỹ thuật"
+        rows="3"
+      ></textarea>
+    </div>
+    <div class="form-group">
+      <label>Vị trí</label>
+      <input v-model="model.storageLocation" placeholder="Nhập vị trí lưu trữ" />
+    </div>
+    <div class="form-row">
+      <div class="form-group half">
+        <label>Tổng số lượng</label>
+        <input
+          v-model.number="model.totalQuantity"
+          type="number"
+          min="0"
+          placeholder="Nhập tổng số lượng"
+        />
+      </div>
+      <div class="form-group half">
+        <label>Số lượng khả dụng</label>
+        <input
+          v-model.number="model.availableQuantity"
+          type="number"
+          min="0"
+          placeholder="Nhập số lượng khả dụng"
+        />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">{{ submitText }}</button>
+      <button type="button" v-if="showCancel" class="btn-secondary" @click="$emit('cancel')">
+        Hủy
+      </button>
+    </div>
   </form>
 
   <div v-if="error" class="error">{{ error }}</div>
@@ -57,27 +98,97 @@ function onSubmit() {
 <style scoped>
 .form {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
-.form input {
-  padding: 6px 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.form button {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 8px;
-  background: #3b82f6;
-  color: #fff;
-  cursor: pointer;
+
+.form-row {
+  display: flex;
+  gap: 16px;
 }
-.form button + button {
-  background: #9ca3af;
+
+.form-group.half {
+  width: 50%;
 }
-.error {
+
+.form-group label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
   margin-top: 8px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: #9ca3af;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #6b7280;
+}
+
+.error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
   color: #b91c1c;
+  font-size: 0.875rem;
 }
 </style>
