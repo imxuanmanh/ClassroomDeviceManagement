@@ -41,7 +41,8 @@ import Header from './Header.vue'
 const route = useRoute()
 
 // ✅ Tự động ẩn layout ở các trang cụ thể
-const hideLayout = computed(() => ['/login', '/user-borrow'].includes(route.path))
+// const hideLayout = computed(() => ['/login', '/user-borrow'].includes(route.path))
+const hideLayout = computed(() => ['/login'].includes(route.path))
 
 // Trạng thái thu gọn/mở rộng sidebar
 const isSidebarCollapsed = ref(false)

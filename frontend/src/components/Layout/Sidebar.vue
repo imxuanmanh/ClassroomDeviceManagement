@@ -36,33 +36,77 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
+//
+const isAdmin = computed(() => auth.roleId === 1)
+//
 
 const loginLabel = computed(() =>
-  auth.fullname && auth.fullname.trim() !== ''
-    ? auth.fullname
-    : 'Lỗi'
+  auth.fullname && auth.fullname.trim() !== '' ? auth.fullname : 'Lỗi',
 )
 
-const menu = computed(() => [
-  {
-    title: 'Tổng quan',
-    items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
-  },
-  {
-    title: 'Quản lý',
-    items: [
-      { to: '/devices', icon: 'devices', label: 'Thiết bị' },
-      { to: '/users', icon: 'person', label: 'Người dùng' },
-    ],
-  },
-  {
-    title: 'Theo dõi',
-    items: [
-      { to: '/history', icon: 'history', label: 'Lịch sử' },
-      { to: '/reports', icon: 'report', label: 'Thống kê' },
-    ],
-  },
-])
+// const menu = computed(() => [
+//   {
+//     title: 'Tổng quan',
+//     items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
+//   },
+//   // {
+//   //   title: 'Quản lý',
+//   //   items: [
+//   //     { to: '/devices', icon: 'devices', label: 'Thiết bị' },
+//   //     { to: '/users', icon: 'person', label: 'Người dùng' },
+//   //   ],
+//   // },
+
+//   {
+//     title: 'Quản lý',
+//     items: [
+//       { to: '/devices', icon: 'devices', label: 'Thiết bị' },
+//       ...(isAdmin.value ? [{ to: '/users', icon: 'person', label: 'Người dùng' }] : []),
+//     ],
+//   },
+
+//   {
+//     title: 'Theo dõi',
+//     items: [
+//       { to: '/history', icon: 'history', label: 'Lịch sử' },
+//       { to: '/reports', icon: 'report', label: 'Thống kê' },
+//     ],
+//   },
+// ])
+
+const menu = computed(() => {
+  if (isAdmin.value) {
+    // 🧑‍💼 Nếu là admin → hiển thị đầy đủ
+    return [
+      {
+        title: 'Tổng quan',
+        items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
+      },
+      {
+        title: 'Quản lý',
+        items: [
+          { to: '/devices', icon: 'devices', label: 'Thiết bị' },
+          { to: '/users', icon: 'person', label: 'Người dùng' },
+        ],
+      },
+      {
+        title: 'Theo dõi',
+        items: [
+          { to: '/history', icon: 'history', label: 'Lịch sử' },
+          { to: '/reports', icon: 'report', label: 'Thống kê' },
+        ],
+      },
+    ]
+  } else {
+    // 👤 Nếu là user → chỉ hiện “Thiết bị”
+    return [
+      {
+        title: 'Thiết bị của tôi',
+        items: [{ to: '/devices', icon: 'devices', label: 'Thiết bị' }],
+      },
+    ]
+  }
+})
 </script>
 
 <style scoped>

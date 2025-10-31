@@ -1,48 +1,46 @@
-<!--
-  HEADER ỨNG DỤNG
-  - Chứa nút menu toggle, tiêu đề, tìm kiếm, thông báo
-  - Hiển thị thông tin người dùng và nút đăng nhập/đăng xuất
-  - Hỗ trợ slots để tùy chỉnh nội dung
--->
 <template>
-  <header class="header" role="banner">
-    <h1 class="title">Quản lý Thiết Bị Phòng Học</h1>
+  <header class="header">
+    <button class="logout-btn" @click="handleLogout">Đăng xuất</button>
   </header>
 </template>
 
 <script setup>
-defineOptions({ name: 'AppHeader' })
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+function handleLogout() {
+  auth.logout()
+  router.replace('/login')
+}
 </script>
 
 <style scoped>
 .header {
-  display: grid;
-  margin: 2rem;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  padding: 12px 16px;
-  gap: 12px;
+  justify-content: flex-end; /* ✅ Đẩy nút sang phải */
+  background: #417c85; /* giữ màu đồng bộ Layout */
+  height: 64px;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
-.title {
-  margin: 0;
-  font-size: 20px;
-  text-align: center;
-  justify-self: center;
+
+.logout-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.2s ease;
 }
-.title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.right {
-  display: none;
-}
-@media (max-width: 768px) {
-  .title {
-    font-size: 16px;
-  }
+
+.logout-btn:hover {
+  background: #dc2626;
 }
 </style>

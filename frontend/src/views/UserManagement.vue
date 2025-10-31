@@ -3,7 +3,8 @@
     <header class="page-header">
       <h2>Người dùng</h2>
       <div class="actions">
-        <button @click="showForm = true">Thêm người dùng</button>
+        <!-- <button @click="showForm = true">Thêm người dùng</button> -->
+        <button v-if="isAdmin" @click="showForm = true">Thêm người dùng</button>
       </div>
     </header>
     <UserFormModal v-if="showForm" @register="register" @cancel="cancel" />
@@ -34,7 +35,11 @@
 import { ref, onMounted } from 'vue'
 import { authApi, userApi } from '@/config/api.js'
 import UserFormModal from '@/components/UserFormModal.vue'
-
+//
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
+const isAdmin = auth.roleId === 1
+//
 const users = ref([])
 const showForm = ref(false)
 const error = ref('')
@@ -56,7 +61,8 @@ async function register(form) {
     // await fetchUsers()
     cancel()
   } catch (err) {
-    error.value = 'Không thể thêm người dùng'
+    console.error('Lỗi tải danh sách người dùng:', err)
+    error.value = 'Không thể tải danh sách người dùng'
   }
 }
 

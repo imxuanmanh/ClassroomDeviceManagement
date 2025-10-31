@@ -1,6 +1,6 @@
 /**
  * STORE LỊCH SỬ MƯỢN/TRẢ THIẾT BỊ
- * 
+ *
  * Quản lý lịch sử tất cả các giao dịch mượn và trả thiết bị
  * Mỗi khi có hoạt động mượn/trả sẽ được ghi lại vào đây
  */
@@ -17,7 +17,9 @@ function loadInitial() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw)
-  } catch (_) {}
+  } catch {
+    // Bỏ qua lỗi
+  }
   return [] // Trả về mảng rỗng nếu chưa có dữ liệu
 }
 
@@ -26,16 +28,20 @@ export const useHistoryStore = defineStore('history', {
   state: () => ({
     records: loadInitial(), // Danh sách các bản ghi lịch sử
   }),
-  
+
   // Các action để thao tác với lịch sử
   actions: {
     /**
      * Lưu dữ liệu lịch sử vào localStorage
      */
     persist() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.records)) } catch (_) {}
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.records))
+      } catch {
+        // Bỏ qua lỗi
+      }
     },
-    
+
     /**
      * Ghi log khi có thiết bị được mượn
      * @param {Object} data - Thông tin giao dịch mượn
@@ -46,17 +52,17 @@ export const useHistoryStore = defineStore('history', {
      * @param {string} data.date - Ngày mượn
      */
     logBorrow({ deviceId, deviceName, borrowerId, borrowerName, date }) {
-      this.records.unshift({ 
-        type: 'borrow', 
-        deviceId, 
-        deviceName, 
-        borrowerId, 
-        borrowerName, 
-        date 
+      this.records.unshift({
+        type: 'borrow',
+        deviceId,
+        deviceName,
+        borrowerId,
+        borrowerName,
+        date,
       })
       this.persist() // Lưu vào localStorage
     },
-    
+
     /**
      * Ghi log khi có thiết bị được trả
      * @param {Object} data - Thông tin giao dịch trả
@@ -67,25 +73,23 @@ export const useHistoryStore = defineStore('history', {
      * @param {string} data.date - Ngày trả
      */
     logReturn({ deviceId, deviceName, borrowerId, borrowerName, date }) {
-      this.records.unshift({ 
-        type: 'return', 
-        deviceId, 
-        deviceName, 
-        borrowerId, 
-        borrowerName, 
-        date 
+      this.records.unshift({
+        type: 'return',
+        deviceId,
+        deviceName,
+        borrowerId,
+        borrowerName,
+        date,
       })
       this.persist() // Lưu vào localStorage
     },
-    
+
     /**
      * Xóa toàn bộ lịch sử
      */
-    clear() { 
+    clear() {
       this.records = []
       this.persist() // Lưu vào localStorage
-    }
+    },
   },
 })
-
-

@@ -8,7 +8,7 @@
 // Cấu hình chung cho API
 export const API_CONFIG = {
   // Địa chỉ cơ sở của server API
-  BASE_URL: 'http://10.89.195.66:5129/api',
+  BASE_URL: 'http://172.16.0.31:5129/api',
 
   // Danh sách các endpoint API
   ENDPOINTS: {
