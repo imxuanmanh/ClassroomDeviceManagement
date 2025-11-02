@@ -105,7 +105,7 @@ import { ref, onMounted } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
 import { deviceApi, categoryApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
-
+import { borrowApi } from '@/config/api'
 const auth = useAuthStore()
 const isAdmin = auth.roleId === 1
 
@@ -223,9 +223,40 @@ function openBorrowForm(model) {
 function closeBorrowForm() {
   showBorrowForm.value = false
 }
-function confirmBorrow() {
-  console.log('Tạm thời chưa xử lý — sẽ gửi request mượn sau')
-  showBorrowForm.value = false
+
+async function confirmBorrow() {
+  // Kiểm tra model được chọn
+  if (!selectedModel.value) return
+
+  // Kiểm tra dữ liệu nhập
+  if (!usageLocation.value.trim() || !usagePurpose.value.trim()) {
+    alert('⚠️ Vui lòng nhập đầy đủ vị trí và mục đích sử dụng.')
+    return
+  }
+
+  // Chuẩn bị dữ liệu gửi API
+  const payload = {
+    userId: auth.userId, // Lấy từ tài khoản đăng nhập
+    modelId: selectedModel.value.modelId, // Lấy từ model đang chọn
+    usageLocation: usageLocation.value.trim(),
+    purpose: usagePurpose.value.trim(),
+  }
+
+  console.log('📦 Payload gửi đi:', payload) // 👈 thêm dòng này
+
+  try {
+    // Gọi API POST /api/borrow-requests
+    const result = await borrowApi.create(payload)
+
+    console.log('✅ Borrow request sent:', result)
+    alert('✅ Yêu cầu mượn thiết bị đã được gửi thành công!')
+
+    // Đóng form
+    showBorrowForm.value = false
+  } catch (err) {
+    console.error('❌ Lỗi khi gửi yêu cầu mượn:', err)
+    alert('❌ Không thể gửi yêu cầu mượn thiết bị. Vui lòng thử lại sau.')
+  }
 }
 
 onMounted(() => {

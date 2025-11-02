@@ -2,11 +2,9 @@
   <section class="device">
     <!-- Header -->
     <header class="page-header">
-      <h2>Danh Sách Thiết bị</h2>
-      <div class="actions">
-        <input v-model="q" placeholder="Tìm theo tên/loại" />
-        <button v-if="isAdmin" @click="openCreate">Thêm</button>
-      </div>
+      <header class="page-header">
+        <h2>Danh Sách Thiết bị</h2>
+      </header>
     </header>
 
     <div class="content">
@@ -36,9 +34,18 @@
 
       <!-- Chi tiết model -->
       <div v-else class="models-view">
-        <div class="models-header">
+        <!-- <div class="models-header">
           <button class="back-btn" @click="backToCategories">← Quay lại</button>
           <h3>{{ selectedCategory.name }}</h3>
+        </div> -->
+        <div class="models-header">
+          <div class="left-controls">
+            <button class="back-btn" @click="backToCategories">⮌</button>
+            <h3>{{ selectedCategory.name }}</h3>
+          </div>
+
+          <!-- Chỉ admin mới thấy nút thêm -->
+          <button v-if="isAdmin" class="add-btn" @click="openCreate">➕ Thêm</button>
         </div>
 
         <div class="models-table">
@@ -76,7 +83,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
-import { deviceApi, categoryApi } from '@/config/api'
+import { deviceApi, categoryApi, modelApi } from '@/config/api' // 🔹 Thêm modelApi
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -116,7 +123,7 @@ async function fetchCategories() {
   }
 }
 
-// Fetch all devices
+// Fetch all devices (nếu cần cho admin)
 async function fetchDevices() {
   loading.value = true
   try {
@@ -157,6 +164,7 @@ function openCreate() {
     storageLocation: '',
     totalQuantity: 0,
     availableQuantity: 0,
+    categoryId: selectedCategory.value?.id || null, // 🔹 Gán sẵn id category đang mở
   }
 }
 
@@ -164,27 +172,53 @@ function closeForm() {
   showForm.value = false
 }
 
+import { ElMessage } from 'element-plus'
+
 async function save(payload) {
   loading.value = true
   try {
     if (editingIndex.value !== null) {
+      // 🟦 Nếu đang chỉnh sửa — cập nhật thiết bị
       const id = items.value[editingIndex.value]?.deviceId
       await deviceApi.update(id, payload)
+      ElMessage.success('Cập nhật thiết bị thành công!')
     } else {
-      await deviceApi.create(payload)
+      // 🟩 Nếu đang thêm mới model
+      await modelApi.create({
+        modelName: payload.deviceName,
+        categoryId: selectedCategory.value.id,
+        specifications: payload.specification,
+        storageLocation: payload.storageLocation,
+      })
+      ElMessage.success('Thêm thiết bị thành công!')
     }
-    await fetchDevices()
+
+    // 🟢 Sau khi thêm/cập nhật, load lại danh sách models từ server
+    if (selectedCategory.value) {
+      modelsByCategory.value[selectedCategory.value.id] = await categoryApi.getModelsByCategory(
+        selectedCategory.value.id,
+      )
+    }
+
+    // ✅ Đóng form sau khi lưu xong
     closeForm()
-  } catch {
+  } catch (err) {
+    console.error(err)
     error.value = 'Không thể lưu thiết bị'
+    ElMessage.error('Lưu thiết bị thất bại!')
   } finally {
     loading.value = false
   }
 }
 
+// Lifecycle
 onMounted(() => {
-  fetchDevices()
   fetchCategories()
+})
+onMounted(() => {
+  if (isAdmin) {
+    fetchDevices()
+  }
 })
 </script>
 
@@ -247,12 +281,41 @@ onMounted(() => {
 .models-view {
   animation: fadeIn 0.3s ease;
 }
-.models-header {
+/* .models-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+} */
+
+.models-header {
+  display: flex;
+  justify-content: space-between; /* 🔹 Đẩy 2 bên xa nhau */
+  align-items: center;
+  margin-bottom: 16px;
 }
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.add-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.add-btn:hover {
+  background: #1e40af;
+}
+
 .back-btn {
   background: none;
   border: none;

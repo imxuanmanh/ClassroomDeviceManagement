@@ -94,6 +94,7 @@ const menu = computed(() => {
         items: [
           { to: '/history', icon: 'history', label: 'Lịch sử' },
           { to: '/reports', icon: 'report', label: 'Thống kê' },
+          { to: '/requests', icon: 'assignment', label: 'Yêu cầu' }, // 🆕 thêm dòng này
         ],
       },
     ]
