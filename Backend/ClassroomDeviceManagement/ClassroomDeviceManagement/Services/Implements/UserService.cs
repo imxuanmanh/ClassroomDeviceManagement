@@ -1,10 +1,13 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Helper;
 using ClassroomDeviceManagement.Models;
-using ClassroomDeviceManagement.Repositories;
+using ClassroomDeviceManagement.ViewModels;
 using ClassroomDeviceManagement.Enums;
+using ClassroomDeviceManagement.Repositories.Interfaces;
+using ClassroomDeviceManagement.Services.Interfaces;
 
-namespace ClassroomDeviceManagement.Services
+
+namespace ClassroomDeviceManagement.Services.Implements
 {
     public class UserService : IUserService
     {
@@ -17,6 +20,11 @@ namespace ClassroomDeviceManagement.Services
         public async Task<UserDto?> AddUserAsync(UserDto user)
         {
             return await _userRepository.AddUserAsync(user);
+        }
+
+        public async Task<IEnumerable<UserViewModel>> GetAllUsers()
+        {
+            return await _userRepository.GetAllUsers();
         }
 
         public async Task<User?> GetUserByUsernameAsync(string username)
@@ -42,11 +50,12 @@ namespace ClassroomDeviceManagement.Services
             {
                 return new UserDto
                 {
+                    UserId = loginUser.Id,
                     Username = loginUser.Username,
                     Password = null,
                     Fullname = loginUser.Fullname,
                     Email = loginUser.Email,
-                    RoleId = (Role)loginUser.RoleId
+                    RoleId = (UserRole)loginUser.RoleId
                 };
             }
 

@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Data.SqlClient;
 using ClassroomDeviceManagement.Helper;
+using ClassroomDeviceManagement.Repositories.Interfaces;
+using ClassroomDeviceManagement.ViewModels;
 
-namespace ClassroomDeviceManagement.Repositories
+namespace ClassroomDeviceManagement.Repositories.Implements
 {
     public class UserRepository : IUserRepository
     {
@@ -77,6 +79,7 @@ namespace ClassroomDeviceManagement.Repositories
                         user.Id = reader.GetInt32(reader.GetOrdinal("user_id"));
                         user.Username = reader.GetString(reader.GetOrdinal("username"));
                         user.PasswordHash = reader.GetString(reader.GetOrdinal("password_hash"));
+                        user.Fullname = reader.GetString(reader.GetOrdinal("fullname"));
                         user.Email = reader.GetString(reader.GetOrdinal("email"));
                         user.RoleId = reader.GetInt32(reader.GetOrdinal("role_id"));
                     }
@@ -87,6 +90,53 @@ namespace ClassroomDeviceManagement.Repositories
             return user;
         }
 
+        public async Task<IEnumerable<UserViewModel>> GetAllUsers()
+        {
+            List<UserViewModel> users = new List<UserViewModel>();
 
+            try
+            {
+                await _dbManager.ExecuteQueryAsync(
+                    @"
+                    SELECT
+                        user_id AS UserId,
+                        username AS Username,
+                        fullname AS Fullname,
+                        email AS Email,
+                        role_id AS RoleId
+                    FROM 
+                        [user];
+                    ",
+
+                    async reader =>
+                    {
+                        int userIdIndex = reader.GetOrdinal("UserId");
+                        int usernameIndex = reader.GetOrdinal("Username");
+                        int fullnameIndex = reader.GetOrdinal("Fullname");
+                        int emailIndex = reader.GetOrdinal("Email");
+                        int roleIndex = reader.GetOrdinal("RoleId");
+
+                        while (await reader.ReadAsync())
+                        {
+                            users.Add(new UserViewModel
+                            {
+                                UserId = reader.GetInt32(userIdIndex),
+                                Username = reader.GetString(usernameIndex),
+                                Fullname = reader.GetString(fullnameIndex),
+                                Email = reader.GetString(emailIndex),
+                                Role = (Enums.UserRole)reader.GetInt32(roleIndex)
+                            });
+                        }
+                    }
+                );
+                return users;
+
+            }
+            catch (SqlException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

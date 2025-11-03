@@ -1,5 +1,5 @@
 ﻿using ClassroomDeviceManagement.Dto;
-using ClassroomDeviceManagement.Services;
+using ClassroomDeviceManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace ClassroomDeviceManagement.Controllers
 {
+    /// <summary>
+    /// Controller để quản lý các loại thiết bị.
+    /// </summary>
     [Route("api/categories")]
     [ApiController]
     public class DeviceCategoryController : ControllerBase

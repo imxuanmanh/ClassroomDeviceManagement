@@ -137,7 +137,7 @@ namespace ClassroomDeviceManagement.Managers
         }
 
         // Thực thi query trả về một giá trị đơn (scalar)
-        public async Task<T> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters)
+        public async Task<T?> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters) where T : struct
         {
             using var connection = new SqlConnection(_connectionString);
             using var command = new SqlCommand(sql, connection);
@@ -146,20 +146,21 @@ namespace ClassroomDeviceManagement.Managers
                 command.Parameters.AddRange(parameters);
 
             await connection.OpenAsync();
-            object result = await command.ExecuteScalarAsync();
+            object? result = await command.ExecuteScalarAsync();
 
             if (result == null || result is DBNull)
-                return default;
+                return null;  // trả về null nếu không có kết quả
 
             return (T)Convert.ChangeType(result, typeof(T));
         }
 
+
         // Kiểm tra tồn tại bản ghi trả về true/false
         public async Task<bool> ExistsAsync(string sql, params SqlParameter[] parameters)
         {
-            // Thông thường sql dạng: SELECT COUNT(1) FROM Table WHERE Condition
-            int count = await ExecuteScalarAsync<int>(sql, parameters);
-            return count > 0;
+            int? count = await ExecuteScalarAsync<int>(sql, parameters);
+            return (count ?? 0) > 0;
         }
+
     }
 }

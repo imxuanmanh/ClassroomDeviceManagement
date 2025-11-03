@@ -1,8 +1,9 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Repositories;
+using ClassroomDeviceManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ClassroomDeviceManagement.Services
+namespace ClassroomDeviceManagement.Services.Implements
 {
     public class DeviceCategoryService : IDeviceCategoryService
     {

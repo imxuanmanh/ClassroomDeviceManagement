@@ -3,7 +3,7 @@ using ClassroomDeviceManagement.Dto;
 using Microsoft.Data.SqlClient;
 
 
-namespace ClassroomDeviceManagement.Repositories
+namespace ClassroomDeviceManagement.Repositories.Implements
 {
     public class DeviceCategoryRepository : IDeviceCategoryRepository
     {

@@ -1,9 +1,10 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Managers;
 using ClassroomDeviceManagement.Models;
+using ClassroomDeviceManagement.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 
-namespace ClassroomDeviceManagement.Repositories
+namespace ClassroomDeviceManagement.Repositories.Implements
 {
     public class DeviceInstanceRepository : IDeviceInstanceRepository
     {
@@ -44,6 +45,29 @@ namespace ClassroomDeviceManagement.Repositories
             return instances;
         }
 
+        public async Task<int?> GetAvailableInstanceByModelId(int id)
+        {
+            return await _dbManager.ExecuteScalarAsync<int>(
+                @"
+                SELECT TOP 1 
+                    di.instance_id
+    
+                FROM 
+                    device_instance di
+
+                JOIN
+                    instance_status s ON di.status_id = s.id
+
+                WHERE 
+                    di.model_id = @modelId
+
+                AND s.name = 'Available';
+                ",
+                new SqlParameter("@modelId", id)
+                );
+        }
+        
+
         public async Task<DeviceInstanceDto?> AddInstanceAsync(DeviceInstance instance)
         {
             DeviceInstanceDto? result = null;
@@ -77,6 +101,32 @@ namespace ClassroomDeviceManagement.Repositories
                 new SqlParameter("@currentLocation", instance.CurrentLocation)
                 );
             return result;
+        }
+
+        public async Task<bool> ChangeInstanceStatus(int instanceId, InstanceStatus newStatus)
+        {
+            try
+            {
+                int row = await _dbManager.ExecuteNonQueryAsync(
+                    @"
+                        UPDATE 
+                            device_instance
+                        SET 
+                            status_id = @statusId
+                        WHERE
+                            instance_id = @instanceId;
+                    ",
+                    new SqlParameter("@statusId", (int)newStatus),
+                    new SqlParameter("@instanceId", instanceId)
+                    );
+                return row > 0;
+            }
+            catch (SqlException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
+                return false;
+            }
+  
         }
     }
 }

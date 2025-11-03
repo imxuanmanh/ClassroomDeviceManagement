@@ -1,6 +1,9 @@
 using ClassroomDeviceManagement.Managers;
 using ClassroomDeviceManagement.Repositories;
-using ClassroomDeviceManagement.Services;
+using ClassroomDeviceManagement.Repositories.Implements;
+using ClassroomDeviceManagement.Repositories.Interfaces;
+using ClassroomDeviceManagement.Services.Implements;
+using ClassroomDeviceManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -80,12 +83,16 @@ builder.Services.AddScoped<IDeviceInstanceRepository, DeviceInstanceRepository>(
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+builder.Services.AddScoped<IBorrowRequestRepository, BorrowRequestRepository>();
+
 // Đăng ký Services
 builder.Services.AddScoped<IDeviceCategoryService, DeviceCategoryService>();
 builder.Services.AddScoped<IDeviceModelService, DeviceModelService>();
 builder.Services.AddScoped<IDeviceInstanceService,  DeviceInstanceService>();
 
 builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<IBorrowRequestService,  BorrowRequestService>();
 
 // Đăng ký Controllers
 builder.Services.AddControllers();

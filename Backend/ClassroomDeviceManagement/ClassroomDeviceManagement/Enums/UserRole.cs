@@ -1,6 +1,6 @@
 ﻿namespace ClassroomDeviceManagement.Enums
 {
-    public enum Role
+    public enum UserRole
     {
         Admin = 1,
         Teacher = 2,

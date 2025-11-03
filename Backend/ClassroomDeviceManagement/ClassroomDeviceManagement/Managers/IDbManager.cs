@@ -8,7 +8,7 @@ namespace ClassroomDeviceManagement.Managers
         Task<int> ExecuteNonQueryAsync(string query, params SqlParameter[] parameters);
 
         Task<Dictionary<int, T>> ExecuteQueryAsync<T>(string sql, params SqlParameter[] parameters) where T : new();
-        Task<T> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters);
+        Task<T?> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters) where T : struct;
         Task<bool> ExistsAsync(string sql, params SqlParameter[] parameters);
     }
 }

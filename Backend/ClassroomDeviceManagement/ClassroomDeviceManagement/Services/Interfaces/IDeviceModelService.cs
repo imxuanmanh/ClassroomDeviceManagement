@@ -1,7 +1,7 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Models;
 
-namespace ClassroomDeviceManagement.Services
+namespace ClassroomDeviceManagement.Services.Interfaces
 {
     public interface IDeviceModelService
     {

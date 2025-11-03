@@ -1,8 +1,9 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Models;
-using ClassroomDeviceManagement.Repositories;
+using ClassroomDeviceManagement.Repositories.Interfaces;
+using ClassroomDeviceManagement.Services.Interfaces;
 
-namespace ClassroomDeviceManagement.Services
+namespace ClassroomDeviceManagement.Services.Implements
 {
     public class DeviceModelService : IDeviceModelService
     {

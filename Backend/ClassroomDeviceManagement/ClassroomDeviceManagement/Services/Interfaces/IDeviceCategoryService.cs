@@ -1,7 +1,7 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Repositories;
 
-namespace ClassroomDeviceManagement.Services
+namespace ClassroomDeviceManagement.Services.Interfaces
 {
     public interface IDeviceCategoryService
     {

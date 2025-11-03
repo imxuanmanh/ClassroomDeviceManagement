@@ -3,8 +3,9 @@ using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Models;
 
 using Microsoft.Data.SqlClient;
+using ClassroomDeviceManagement.Repositories.Interfaces;
 
-namespace ClassroomDeviceManagement.Repositories
+namespace ClassroomDeviceManagement.Repositories.Implements
 {
     public class DeviceModelRepository : IDeviceModelRepository
     {
@@ -32,7 +33,7 @@ namespace ClassroomDeviceManagement.Repositories
                 FROM
                 	device_model model
                 
-                JOIN 
+                LEFT JOIN 
                 	device_instance instance ON model.model_id = instance.model_id
                 
                 WHERE

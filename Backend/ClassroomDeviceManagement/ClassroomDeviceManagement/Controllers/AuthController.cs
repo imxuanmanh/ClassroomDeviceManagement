@@ -1,13 +1,12 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Models;
 using ClassroomDeviceManagement.Enums;
-using ClassroomDeviceManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
+using ClassroomDeviceManagement.Services.Interfaces;
 
 namespace ClassroomDeviceManagement.Controllers
 {
@@ -83,7 +82,7 @@ namespace ClassroomDeviceManagement.Controllers
                 return Unauthorized(new { message = "Sai tài khoản hoặc mật khẩu" });
             }
 
-            if (user.RoleId == Role.Admin)
+            if (user.RoleId == UserRole.Admin)
             {
                 role = "Admin";
             }

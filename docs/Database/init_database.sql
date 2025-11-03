@@ -152,7 +152,7 @@ CREATE TABLE borrow_request (
     return_date DATETIME,
     usage_location NVARCHAR(200),
     status_id INT NOT NULL,
-    reject_reason NVARCHAR(MAX),
+    purpose NVARCHAR(MAX),
     
     -- Date constraints
     CONSTRAINT chk_approved_after_request 
@@ -161,12 +161,8 @@ CREATE TABLE borrow_request (
         CHECK (return_date IS NULL OR approved_date IS NULL OR return_date >= approved_date),
     
     -- Business logic constraints
-    CONSTRAINT chk_reject_reason_logic 
-        CHECK (
-            (reject_reason IS NULL AND LEN(LTRIM(RTRIM(ISNULL(reject_reason, '')))) = 0) 
-            OR 
-            (reject_reason IS NOT NULL AND LEN(LTRIM(RTRIM(reject_reason))) > 0)
-        ),
+    CONSTRAINT chk_purpose_not_empty 
+		CHECK (LEN(LTRIM(RTRIM(ISNULL(purpose, '')))) > 0),
     
     -- Foreign keys
     CONSTRAINT fk_borrow_request_user 
@@ -176,6 +172,8 @@ CREATE TABLE borrow_request (
     CONSTRAINT fk_borrow_request_status 
         FOREIGN KEY (status_id) REFERENCES request_status(id)
 );
+
+
 
 -- Bảng báo cáo
 CREATE TABLE report (
@@ -202,24 +200,3 @@ CREATE TABLE report (
         FOREIGN KEY (status_id) REFERENCES report_status(id)
 );
 
--- ========================================
--- 3. INSERT SAMPLE DATA (Dữ liệu mẫu)
--- ========================================
-
--- Insert user roles
-INSERT INTO user_role (name) VALUES 
-('Admin'), ('Teacher'), ('Student');
-
--- Insert device categories
-INSERT INTO device_category (name) VALUES 
-('Laptop'), ('Projector'), ('USB'), ('Microphone'), ('Speaker'), ('Camera');
-
--- Insert status values
-INSERT INTO instance_status (name) VALUES 
-('Available'), ('Borrowed'), ('Broken'), ('Maintenance');
-
-INSERT INTO request_status (name) VALUES 
-('Pending'), ('Approved'), ('Rejected'), ('Returned');
-
-INSERT INTO report_status (name) VALUES 
-('New'), ('InProgress'), ('Resolved');

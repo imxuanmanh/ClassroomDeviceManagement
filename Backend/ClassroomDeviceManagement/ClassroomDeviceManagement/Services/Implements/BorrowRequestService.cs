@@ -1,0 +1,89 @@
+﻿using ClassroomDeviceManagement.Dto;
+using ClassroomDeviceManagement.Models;
+using ClassroomDeviceManagement.Repositories.Interfaces;
+using ClassroomDeviceManagement.Services.Interfaces;
+using ClassroomDeviceManagement.ViewModels.BorrowRequest;
+
+namespace ClassroomDeviceManagement.Services.Implements
+{
+    public class BorrowRequestService : IBorrowRequestService
+    {
+        private readonly IBorrowRequestRepository _borrowRequestRepository;
+        private readonly IDeviceInstanceRepository _deviceInstanceRepository;
+
+        public BorrowRequestService(IBorrowRequestRepository borrowRequestRepository, IDeviceInstanceRepository deviceInstanceRepository)
+        {
+            _borrowRequestRepository = borrowRequestRepository;
+            _deviceInstanceRepository = deviceInstanceRepository;
+        }
+
+        public async Task<BorrowRequestDto?> CreateBorrowRequestAsync(CreateBorrowRequestDto requestDto)
+        {
+            int? instanceId = await _deviceInstanceRepository.GetAvailableInstanceByModelId(requestDto.ModelId);
+
+            if (instanceId == null)
+            {
+                return null;
+            }
+
+            BorrowRequest borrowRequest = new BorrowRequest
+            {
+                UserId = requestDto.UserId,
+                InstanceId = instanceId.Value,
+                UsageLocation = requestDto.UsageLocation,
+                Purpose = requestDto.Purpose
+            };
+
+            return await _borrowRequestRepository.AddBorrowRequestAsync(borrowRequest);
+        }
+
+        public async Task<IEnumerable<PendingRequestViewModel>> GetPendingBorrowRequestsAsync()
+        {
+            return await _borrowRequestRepository.GetPendingBorrowRequestsAsync();
+        }        
+        public async Task<IEnumerable<ApprovedRequestViewModel>> GetApprovedBorrowRequestsAsync()
+        {
+            return await _borrowRequestRepository.GetApprovedBorrowRequestsAsync();
+        }
+        public async Task<IEnumerable<RejectedRequestViewModel>> GetRejectedBorrowRequestsAsync()
+        {
+            return await _borrowRequestRepository.GetRejectedBorrowRequestsAsync();
+        }
+        public async Task<IEnumerable<ReturnedRequestViewModel>> GetReturnedBorrowRequestsAsync()
+        {
+            return await _borrowRequestRepository.GetReturnedBorrowRequestsAsync();
+        }
+
+        public async Task<bool> ApproveBorrowRequestAsync(int requestId)
+        {
+            int? instanceId = await _borrowRequestRepository.GetInstanceIdByRequestIdAsync(requestId);
+
+            if (instanceId == null) return false;
+
+            bool updateInstanceStatus = await _deviceInstanceRepository.ChangeInstanceStatus(instanceId.Value, InstanceStatus.Borrowed);
+            bool approvedRequest = await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Approved, DateTime.Now, null);
+
+            return updateInstanceStatus && approvedRequest;
+
+            // return await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Approved, DateTime.Now, null);
+        }
+
+        public async Task<bool> RejectBorrowRequestAsync(int requestId)
+        {
+             return await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Rejected, null, null);   
+        }
+        
+        public async Task<bool> ReturnBorrowRequestAsync(int requestId)
+        {        
+            int? instanceId = await _borrowRequestRepository.GetInstanceIdByRequestIdAsync(requestId);
+
+            if (instanceId == null) return false;
+
+            bool updateInstanceStatus = await _deviceInstanceRepository.ChangeInstanceStatus(instanceId.Value, InstanceStatus.Available);
+            bool returnRequest = await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Returned, null, DateTime.Now);
+
+            return updateInstanceStatus && returnRequest;
+        }
+        
+    }
+}
