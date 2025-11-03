@@ -1,31 +1,18 @@
-<!--
-  SIDEBAR ĐIỀU HƯỚNG
-  - Hiển thị menu điều hướng chính của ứng dụng
-  - Hỗ trợ thu gọn/mở rộng với tooltip
-  - Nhóm các menu theo chức năng
--->
 <template>
   <aside class="sidebar">
-    <!-- Admin Login -->
-    <div class="nav">
-      <div class="login-group">
-        <span class="material-icons login">account_circle</span>
-        <span class="label">
-          {{ loginLabel }}
-        </span>
-      </div>
+    <div class="user-info">
+      <span class="material-icons user-icon">account_circle</span>
+      <span class="username">{{ loginLabel }}</span>
+      <span class="role" v-if="isAdmin">Admin</span>
     </div>
-    <!-- Menu điều hướng chính -->
-    <nav class="nav">
-      <!-- Lặp qua từng nhóm menu -->
+
+    <nav class="menu">
       <template v-for="group in menu" :key="group.title">
-        <div class="group">
-          <div class="group-title">{{ group.title }}</div>
-          <router-link v-for="item in group.items" :key="item.to" :to="item.to">
-            <span class="material-icons">{{ item.icon }}</span>
-            <span class="label">{{ item.label }}</span>
-          </router-link>
-        </div>
+        <p class="group-title">{{ group.title }}</p>
+        <router-link v-for="item in group.items" :key="item.to" :to="item.to" class="menu-item">
+          <span class="material-icons">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </router-link>
       </template>
     </nav>
   </aside>
@@ -36,47 +23,14 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
-//
 const isAdmin = computed(() => auth.roleId === 1)
-//
 
 const loginLabel = computed(() =>
-  auth.fullname && auth.fullname.trim() !== '' ? auth.fullname : 'Lỗi',
+  auth.fullname && auth.fullname.trim() !== '' ? auth.fullname : 'Người dùng',
 )
-
-// const menu = computed(() => [
-//   {
-//     title: 'Tổng quan',
-//     items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
-//   },
-//   // {
-//   //   title: 'Quản lý',
-//   //   items: [
-//   //     { to: '/devices', icon: 'devices', label: 'Thiết bị' },
-//   //     { to: '/users', icon: 'person', label: 'Người dùng' },
-//   //   ],
-//   // },
-
-//   {
-//     title: 'Quản lý',
-//     items: [
-//       { to: '/devices', icon: 'devices', label: 'Thiết bị' },
-//       ...(isAdmin.value ? [{ to: '/users', icon: 'person', label: 'Người dùng' }] : []),
-//     ],
-//   },
-
-//   {
-//     title: 'Theo dõi',
-//     items: [
-//       { to: '/history', icon: 'history', label: 'Lịch sử' },
-//       { to: '/reports', icon: 'report', label: 'Thống kê' },
-//     ],
-//   },
-// ])
 
 const menu = computed(() => {
   if (isAdmin.value) {
-    // 🧑‍💼 Nếu là admin → hiển thị đầy đủ
     return [
       {
         title: 'Tổng quan',
@@ -93,13 +47,12 @@ const menu = computed(() => {
         title: 'Theo dõi',
         items: [
           { to: '/history', icon: 'history', label: 'Lịch sử' },
-          { to: '/reports', icon: 'report', label: 'Thống kê' },
-          { to: '/requests', icon: 'assignment', label: 'Yêu cầu' }, // 🆕 thêm dòng này
+          { to: '/reports', icon: 'bar_chart', label: 'Thống kê' },
+          { to: '/requests', icon: 'assignment', label: 'Yêu cầu' },
         ],
       },
     ]
   } else {
-    // 👤 Nếu là user → chỉ hiện “Thiết bị”
     return [
       {
         title: 'Thiết bị của tôi',
@@ -112,63 +65,75 @@ const menu = computed(() => {
 
 <style scoped>
 .sidebar {
-  height: 100%;
   background: #ffffff;
-  color: #000000;
-  padding: 16px 12px;
-  box-sizing: border-box;
-  border-right: 1px solid #eee;
-}
-.material-icons {
-  color: black;
-  margin-bottom: 0;
-  vertical-align: middle;
-  margin-right: 12px;
-}
-.material-icons.login {
-  font-size: 50px;
-  margin-bottom: 4px;
-}
-.login-link {
+  color: #333;
+  height: 100vh;
+  width: 250px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  border-right: 1px solid #e5e7eb;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
 }
-.login-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 32px;
+
+.user-info {
+  text-align: center;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid #eee;
+  background: #f9fbfb;
 }
-.nav {
-  margin-top: 16px;
+
+.user-icon {
+  font-size: 56px;
+  color: #417c85;
 }
-.group {
-  margin-bottom: 12px;
+
+.username {
+  display: block;
+  font-weight: 600;
+  margin-top: 4px;
 }
-.group-title {
+
+.role {
   font-size: 12px;
   color: #6b7280;
-  padding: 0 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 6px;
-  font-weight: 600;
 }
-.nav a {
+
+.menu {
+  flex: 1;
+  padding: 16px;
+}
+
+.group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin: 16px 0 4px;
+}
+
+.menu-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #000000;
+  gap: 10px;
+  color: #333;
   text-decoration: none;
   padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
-.nav a.router-link-active {
+
+.menu-item:hover {
+  background: #eaf4f5;
+  color: #2a5d65;
+  transform: translateX(2px);
+}
+
+.router-link-active {
+  background: #d0e7e9;
+  color: #2a5d65;
   font-weight: 600;
-}
-.label {
-  white-space: nowrap;
+  border-left: 4px solid #2a5d65;
+  padding-left: 8px;
 }
 </style>

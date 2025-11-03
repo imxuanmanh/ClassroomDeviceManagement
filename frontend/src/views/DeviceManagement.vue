@@ -2,9 +2,7 @@
   <section class="device">
     <!-- Header -->
     <header class="page-header">
-      <header class="page-header">
-        <h2>Danh Sách Thiết bị</h2>
-      </header>
+      <h2>Danh Sách Thiết bị</h2>
     </header>
 
     <div class="content">
@@ -29,15 +27,26 @@
           <h3>{{ category.name }}</h3>
         </div>
 
+        <!-- ✅ Nút thêm category -->
+        <div v-if="isAdmin" class="category-card add-category-card" @click="openAddCategory">
+          <span class="plus">+</span>
+          <p>Thêm mới</p>
+        </div>
+
         <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
       </div>
 
+      <CategoryModal
+        v-if="showCategoryForm"
+        :value="{ name: newCategoryName }"
+        title="Thêm loại thiết bị mới"
+        submit-text="Thêm"
+        @submit="addCategory"
+        @close="closeCategoryForm"
+      />
+
       <!-- Chi tiết model -->
-      <div v-else class="models-view">
-        <!-- <div class="models-header">
-          <button class="back-btn" @click="backToCategories">← Quay lại</button>
-          <h3>{{ selectedCategory.name }}</h3>
-        </div> -->
+      <div v-if="selectedCategory" class="models-view">
         <div class="models-header">
           <div class="left-controls">
             <button class="back-btn" @click="backToCategories">⮌</button>
@@ -58,19 +67,61 @@
                 <th>Vị trí lưu trữ</th>
                 <th>Tổng</th>
                 <th>Khả dụng</th>
+                <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
-              <tr v-for="m in modelsByCategory[selectedCategory.id] || []" :key="m.modelId">
-                <td>{{ m.modelId }}</td>
-                <td>{{ m.modelName }}</td>
-                <td>{{ m.specifications }}</td>
-                <td>{{ m.storageLocation }}</td>
-                <td>{{ m.totalQuantity }}</td>
-                <td>{{ m.availableQuantity }}</td>
-              </tr>
+              <template v-for="m in modelsByCategory[selectedCategory.id] || []" :key="m.modelId">
+                <tr>
+                  <td>{{ m.modelId }}</td>
+                  <td>{{ m.modelName }}</td>
+                  <td>{{ m.specifications }}</td>
+                  <td>{{ m.storageLocation }}</td>
+                  <td>{{ m.totalQuantity }}</td>
+                  <td>{{ m.availableQuantity }}</td>
+
+                  <!-- ✅ cột dấu cộng -->
+                  <td class="action-cell">
+                    <button class="icon-btn" @click="handleAdd(m)">
+                      {{ expandedModelIds.includes(m.modelId) ? '⮌' : '➕' }}
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- ✅ Bảng con hiển thị danh sách thiết bị -->
+                <tr v-if="expandedModelIds.includes(m.modelId)" class="model-details">
+                  <td colspan="7">
+                    <table class="sub-table">
+                      <thead>
+                        <tr>
+                          <th>Mã thiết bị</th>
+                          <th>Trạng thái</th>
+                          <th>Vị trí hiện tại</th>
+                          <th>Người mượn</th>
+                          <th>Ngày mượn</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="d in devicesByModel[m.modelId] || []" :key="d.deviceId">
+                          <td>{{ d.deviceId }}</td>
+                          <td>{{ d.status }}</td>
+                          <td>{{ d.currentLocation }}</td>
+                          <td>{{ d.borrower || '—' }}</td>
+                          <td>{{ formatDate(d.borrowedDate) }}</td>
+                        </tr>
+
+                        <tr v-if="(devicesByModel[m.modelId] || []).length === 0">
+                          <td colspan="5" style="text-align: center">Không có thiết bị</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </template>
+
               <tr v-if="(modelsByCategory[selectedCategory.id] || []).length === 0">
-                <td colspan="6" style="text-align: center">Không có dữ liệu</td>
+                <td colspan="7" style="text-align: center">Không có dữ liệu</td>
               </tr>
             </tbody>
           </table>
@@ -81,10 +132,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import CategoryModal from '@/components/Device/CategoryModal.vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
-import { deviceApi, categoryApi, modelApi } from '@/config/api' // 🔹 Thêm modelApi
+import { deviceApi, categoryApi, modelApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const auth = useAuthStore()
 const isAdmin = auth.roleId === 1
@@ -93,10 +146,16 @@ const isAdmin = auth.roleId === 1
 const categories = ref([])
 const modelsByCategory = ref({})
 const selectedCategory = ref(null)
+const expandedModelIds = ref([])
+const devicesByModel = ref({})
 const loading = ref(false)
 const error = ref('')
-const q = ref('')
+const showCategoryForm = ref(false)
+const newCategoryName = ref('')
+const showForm = ref(false)
+const editingIndex = ref(null)
 const items = ref([])
+const q = ref('')
 
 // Form CRUD
 const form = ref({
@@ -108,8 +167,6 @@ const form = ref({
   totalQuantity: 0,
   availableQuantity: 0,
 })
-const editingIndex = ref(null)
-const showForm = ref(false)
 
 // Fetch categories
 async function fetchCategories() {
@@ -123,7 +180,7 @@ async function fetchCategories() {
   }
 }
 
-// Fetch all devices (nếu cần cho admin)
+// Fetch all devices
 async function fetchDevices() {
   loading.value = true
   try {
@@ -164,7 +221,7 @@ function openCreate() {
     storageLocation: '',
     totalQuantity: 0,
     availableQuantity: 0,
-    categoryId: selectedCategory.value?.id || null, // 🔹 Gán sẵn id category đang mở
+    categoryId: selectedCategory.value?.id || null,
   }
 }
 
@@ -172,18 +229,14 @@ function closeForm() {
   showForm.value = false
 }
 
-import { ElMessage } from 'element-plus'
-
 async function save(payload) {
   loading.value = true
   try {
     if (editingIndex.value !== null) {
-      // 🟦 Nếu đang chỉnh sửa — cập nhật thiết bị
       const id = items.value[editingIndex.value]?.deviceId
       await deviceApi.update(id, payload)
       ElMessage.success('Cập nhật thiết bị thành công!')
     } else {
-      // 🟩 Nếu đang thêm mới model
       await modelApi.create({
         modelName: payload.deviceName,
         categoryId: selectedCategory.value.id,
@@ -193,33 +246,81 @@ async function save(payload) {
       ElMessage.success('Thêm thiết bị thành công!')
     }
 
-    // 🟢 Sau khi thêm/cập nhật, load lại danh sách models từ server
     if (selectedCategory.value) {
       modelsByCategory.value[selectedCategory.value.id] = await categoryApi.getModelsByCategory(
         selectedCategory.value.id,
       )
     }
 
-    // ✅ Đóng form sau khi lưu xong
     closeForm()
   } catch (err) {
     console.error(err)
-    error.value = 'Không thể lưu thiết bị'
     ElMessage.error('Lưu thiết bị thất bại!')
   } finally {
     loading.value = false
   }
 }
 
-// Lifecycle
 onMounted(() => {
   fetchCategories()
+  if (isAdmin) fetchDevices()
 })
-onMounted(() => {
-  if (isAdmin) {
-    fetchDevices()
+
+// Thêm category
+function openAddCategory() {
+  showCategoryForm.value = true
+}
+function closeCategoryForm() {
+  showCategoryForm.value = false
+  newCategoryName.value = ''
+}
+async function addCategory(payload) {
+  if (!payload.name.trim()) {
+    ElMessage.warning('Vui lòng nhập tên loại thiết bị')
+    return
   }
-})
+
+  try {
+    const newCategory = await categoryApi.create({ name: payload.name })
+    categories.value.push(newCategory)
+    ElMessage.success('Thêm loại thiết bị thành công!')
+    closeCategoryForm()
+  } catch {
+    ElMessage.error('Không thể thêm loại thiết bị')
+  }
+}
+
+// ✅ Xử lý mở/đóng model & tải danh sách thiết bị
+async function handleAdd(model) {
+  const id = model.modelId
+  const index = expandedModelIds.value.indexOf(id)
+
+  if (index !== -1) {
+    // Nếu đang mở thì đóng lại
+    expandedModelIds.value.splice(index, 1)
+    return
+  }
+
+  // Nếu chưa mở thì thêm vào danh sách mở
+  expandedModelIds.value.push(id)
+
+  // ✅ Chỉ tải dữ liệu nếu chưa có
+  if (!devicesByModel.value[id]) {
+    try {
+      const data = await deviceApi.getByModel(id)
+      devicesByModel.value[id] = data
+    } catch (err) {
+      console.error('Lỗi tải thiết bị của model', err)
+      devicesByModel.value[id] = []
+    }
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('vi-VN')
+}
 </script>
 
 <style scoped>
@@ -236,15 +337,6 @@ onMounted(() => {
   margin: 0;
   color: #111827;
 }
-.actions {
-  display: flex;
-  gap: 8px;
-}
-.actions input {
-  padding: 6px 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
 .content {
   background: #fff;
   border-radius: 12px;
@@ -255,52 +347,46 @@ onMounted(() => {
 /* Category cards */
 .categories {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
   margin-top: 16px;
 }
 .category-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 16px;
+  height: 120px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
+  transition: 0.2s;
 }
 .category-card:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-.category-card h3 {
-  margin: 0;
-  color: #111827;
+.add-category-card {
+  border: 2px dashed #93c5fd;
+  color: #2563eb;
+  font-weight: 600;
 }
-
-/* View models */
-.models-view {
-  animation: fadeIn 0.3s ease;
+.add-category-card .plus {
+  font-size: 36px;
 }
-/* .models-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-} */
-
 .models-header {
   display: flex;
-  justify-content: space-between; /* 🔹 Đẩy 2 bên xa nhau */
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
-
 .left-controls {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-
 .add-btn {
   background: #2563eb;
   color: white;
@@ -311,11 +397,9 @@ onMounted(() => {
   font-weight: 600;
   transition: 0.2s;
 }
-
 .add-btn:hover {
   background: #1e40af;
 }
-
 .back-btn {
   background: none;
   border: none;
@@ -324,13 +408,6 @@ onMounted(() => {
   cursor: pointer;
   font-size: 15px;
   padding: 4px 8px;
-  border-radius: 6px;
-}
-.back-btn:hover {
-  background: #f3f4f6;
-}
-.models-table {
-  overflow-x: auto;
 }
 .models-table table {
   width: 100%;
@@ -347,20 +424,29 @@ onMounted(() => {
   background: #f9fafb;
   font-weight: 600;
 }
-.empty {
-  text-align: center;
-  color: #6b7280;
-  padding: 24px 0;
-}
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ✅ Sub table */
+.sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  background: #f9fafb;
+}
+.sub-table th,
+.sub-table td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.sub-table th {
+  background: #eef2ff;
+  font-weight: 600;
+}
+.sub-table th:nth-child(4),
+.sub-table th:nth-child(5),
+.sub-table td:nth-child(4),
+.sub-table td:nth-child(5) {
+  text-align: center;
+  white-space: nowrap;
 }
 </style>
