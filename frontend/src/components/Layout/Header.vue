@@ -1,12 +1,18 @@
 <template>
   <header class="header">
     <div class="header-left">
+      <!-- Nút toggle sidebar -->
+      <button class="menu-toggle" @click="$emit('toggle-sidebar')">
+        <span class="material-icons">menu</span>
+      </button>
+
+      <!-- Tiêu đề -->
       <h1 class="app-title">Quản lý Thiết bị</h1>
     </div>
 
     <div class="header-right">
       <div class="profile" @click="toggleDropdown">
-        <img src="https://i.pravatar.cc/40" alt="avatar" class="avatar" />
+        <img src="/logo.png" alt="avatar" class="avatar" />
         <span>{{ auth.fullname || 'Admin' }}</span>
         <span class="material-icons">expand_more</span>
 
@@ -55,10 +61,39 @@ function handleLogout() {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* ✅ Gom nút menu và tiêu đề thành một nhóm riêng */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* tạo khoảng cách giữa nút menu và chữ */
+}
+
+/* Nút menu */
+.menu-toggle {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Tiêu đề */
 .app-title {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  margin: 0;
 }
 
 .profile {
@@ -106,50 +141,3 @@ function handleLogout() {
   color: #417c85;
 }
 </style>
-
-<!-- <template>
-  <header class="header">
-    <button class="logout-btn" @click="handleLogout">Đăng xuất</button>
-  </header>
-</template>
-
-<script setup>
-import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-
-const auth = useAuthStore()
-const router = useRouter()
-
-function handleLogout() {
-  auth.logout()
-  router.replace('/login')
-}
-</script>
-
-<style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end; /* ✅ đẩy nút sang phải */
-  background: #417c85;
-  height: 64px;
-  padding: 0 24px; /* khoảng cách với mép phải */
-  box-sizing: border-box;
-}
-
-.logout-btn {
-  background: blue;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  transition: background 0.2s ease;
-}
-
-.logout-btn:hover {
-  background: blue;
-}
-</style> -->

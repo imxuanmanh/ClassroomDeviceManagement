@@ -58,8 +58,7 @@
               <th>Mã thiết bị</th>
               <th>Ngày yêu cầu</th>
               <th>Ngày chấp nhận</th>
-              <th>Nơi sử dụng</th>
-              <th>Mục đích</th>
+              <!-- ❌ Bỏ 2 cột này: Nơi sử dụng, Mục đích -->
               <th>Thao tác</th>
             </tr>
           </thead>
@@ -70,8 +69,7 @@
               <td>{{ req.deviceCode }}</td>
               <td>{{ formatDate(req.requestDate) }}</td>
               <td>{{ formatDate(req.acceptedDate) }}</td>
-              <td>{{ req.location }}</td>
-              <td>{{ req.purpose }}</td>
+              <!-- ❌ Không hiển thị req.location và req.purpose -->
               <td class="actions">
                 <button class="return-btn" @click="returnDevice(index)">Trả lại</button>
               </td>
@@ -90,8 +88,7 @@
               <th>Tên thiết bị</th>
               <th>Mã thiết bị</th>
               <th>Ngày yêu cầu</th>
-              <th>Nơi sử dụng</th>
-              <th>Mục đích</th>
+              <!-- ❌ Bỏ Nơi sử dụng và Mục đích -->
             </tr>
           </thead>
           <tbody>
@@ -100,8 +97,7 @@
               <td>{{ req.deviceName }}</td>
               <td>{{ req.deviceCode }}</td>
               <td>{{ formatDate(req.requestDate) }}</td>
-              <td>{{ req.location }}</td>
-              <td>{{ req.purpose }}</td>
+              <!-- ❌ Không hiển thị req.location và req.purpose -->
             </tr>
           </tbody>
         </table>

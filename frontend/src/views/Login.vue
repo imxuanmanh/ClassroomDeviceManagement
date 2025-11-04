@@ -1,17 +1,29 @@
 <template>
-  <div class="login">
-    <div class="card">
-      <h2>Đăng nhập</h2>
-      <form @submit.prevent="onSubmit">
-        <label>
-          Tên đăng nhập
-          <input v-model="username" type="text" placeholder="Nhập tên đăng nhập" />
-        </label>
-        <label>
-          Mật khẩu
-          <input v-model="password" type="password" placeholder="••••••••" />
-        </label>
-        <button type="submit">Đăng nhập</button>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="/logo.png" alt="Logo" class="login-logo" />
+        <h2>Hệ thống Quản lý Thiết bị</h2>
+      </div>
+
+      <form @submit.prevent="onSubmit" class="login-form">
+        <div class="form-group">
+          <label for="username">Tên đăng nhập</label>
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            placeholder="Nhập tên đăng nhập"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật khẩu</label>
+          <input id="password" v-model="password" type="password" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" class="btn-login">Đăng nhập</button>
       </form>
     </div>
   </div>
@@ -29,45 +41,19 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 
-// async function onSubmit() {
-//   try {
-//     // Gửi request đăng nhập lên server với username và password
-//     const res = await authApi.login({ username: username.value, password: password.value })
-//     console.log('Kết quả trả về từ API:', res) // <-- Thêm dòng này để log kết quả
-//     // Server trả về { token, role, expires }
-//     if (res && res.token && res.role) {
-//       auth.login(res.token, res.role)
-//       const redirect = route.query.redirect
-//       if (redirect) {
-//         router.replace(String(redirect))
-//       } else if (res.role.toLowerCase() === 'admin') {
-//         router.replace('/')
-//       } else {
-//         router.replace('/user-borrow')
-//       }
-//     } else {
-//       alert('Sai tài khoản hoặc mật khẩu!')
-//     }
-//   } catch (err) {
-//     alert('Đăng nhập thất bại!')
-//   }
-// }
-
 async function onSubmit() {
   try {
-    const res = await authApi.login({ username: username.value, password: password.value })
-    console.log('Kết quả trả về từ API:', res)
+    const res = await authApi.login({
+      username: username.value,
+      password: password.value,
+    })
 
     if (res && res.token && res.user) {
-      auth.login(res.token, res.user) // <-- truyền user object
+      auth.login(res.token, res.user)
       const redirect = route.query.redirect
-      if (redirect) {
-        router.replace(String(redirect))
-      } else if (res.user.roleId === 1) {
-        router.replace('/devices')
-      } else {
-        router.replace('/user-borrow')
-      }
+      if (redirect) router.replace(String(redirect))
+      else if (res.user.roleId === 1) router.replace('/devices')
+      else router.replace('/user-borrow')
     } else {
       alert('Sai tài khoản hoặc mật khẩu!')
     }
@@ -79,50 +65,118 @@ async function onSubmit() {
 </script>
 
 <style scoped>
-.login {
-  min-height: calc(90vh - 90px);
+.login-page {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  align-items: center; /* Căn giữa theo chiều dọc */
+  justify-content: center; /* Căn giữa theo chiều ngang */
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
 }
-.card {
+
+.login-container {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 380px;
+}
+
+.login-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
   width: 100%;
-  max-width: 25rem;
-  /*background: linear-gradient(135deg, #66a8ea 0%, #996cc5 100%);*/
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-}
-h2 {
-  margin: 0;
-  padding-bottom: 2rem;
+  max-width: 400px;
   text-align: center;
+  animation: fadeIn 0.6s ease;
 }
-form {
-  display: grid;
-  gap: 12px;
+
+.login-header {
+  margin-bottom: 1.5rem;
 }
+
+.login-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.login-header h2 {
+  font-size: 1.5rem;
+  color: #1e3a8a;
+  margin-bottom: 0.3rem;
+}
+
+.login-header p {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  text-align: left;
+}
+
 label {
-  display: grid;
-  gap: 6px;
   font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  display: block;
 }
+
 input {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
   padding: 10px 12px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
 }
-button {
-  margin-top: 8px;
+
+input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  outline: none;
+}
+
+/* Nút đăng nhập */
+.btn-login {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  color: white;
   border: none;
-  background: #3b82f6;
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
   cursor: pointer;
+  font-size: 1rem;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
-button:hover {
-  background: #2563eb;
+
+.btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.3);
+}
+
+/* Hiệu ứng fade */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
