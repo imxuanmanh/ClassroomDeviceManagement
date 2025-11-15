@@ -1,11 +1,9 @@
 <template>
   <div class="layout">
-    <!-- ✅ Sidebar -->
     <div v-if="!isSidebarCollapsed" class="sidebar">
       <Sidebar />
     </div>
 
-    <!-- ✅ Khu vực chính -->
     <div class="main" :style="isSidebarCollapsed ? { paddingLeft: 0 } : {}">
       <Header @toggle-sidebar="toggleSidebar" />
 
@@ -59,7 +57,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
   left: 0;
   top: 0;
   z-index: 10;
-  background: #fff;
+  /* Thuộc tính background sẽ được kiểm soát bởi file Sidebar.vue */
   transition: all 0.3s ease;
 }
 
@@ -74,9 +72,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 
 .content {
   flex: 1;
-  color: #000;
+  /* === THAY ĐỔI MÀU NỀN VÀ CHỮ === */
+  color: #fff; /* Chữ mặc định là màu trắng */
   padding: 24px;
-  background: #f6f9ff;
-  overflow-y: auto;
+  background: linear-gradient(135deg, #e8fff8, #d2fff0, #b8f5e1);
 }
 </style>

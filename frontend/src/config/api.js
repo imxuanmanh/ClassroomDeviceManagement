@@ -3,7 +3,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://10.10.56.21:5129/api',
+  BASE_URL: 'http://192.168.1.105:5129/api',
 
   ENDPOINTS: {
     DEVICES: '/device',
@@ -236,4 +236,3 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 }
-

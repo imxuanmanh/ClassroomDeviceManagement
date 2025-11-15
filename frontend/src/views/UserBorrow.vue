@@ -36,6 +36,43 @@
             <input v-model="usagePurpose" placeholder="Nhập mục đích sử dụng" />
           </div>
 
+          <!-- Thanh trượt chọn tiết -->
+          <div class="field">
+            <label>Chọn tiết sử dụng</label>
+
+            <div class="period-slider-container">
+              <div class="labels">
+                <span v-for="i in 15" :key="i" class="period-label">{{ i }}</span>
+              </div>
+
+              <div class="slider-wrap">
+                <div class="range-highlight"></div>
+
+                <input
+                  type="range"
+                  min="1"
+                  max="15"
+                  v-model="startPeriod"
+                  @input="fixPeriod"
+                  class="slider slider-start"
+                />
+
+                <input
+                  type="range"
+                  min="1"
+                  max="15"
+                  v-model="endPeriod"
+                  @input="fixPeriod"
+                  class="slider slider-end"
+                />
+              </div>
+
+              <div class="result">
+                Tiết bắt đầu: {{ startPeriod }} – Tiết kết thúc: {{ endPeriod }}
+              </div>
+            </div>
+          </div>
+
           <div class="actions">
             <button class="cancel-btn" @click="closeBorrowForm">Hủy</button>
             <button class="submit-btn" @click="confirmBorrow">Xác nhận</button>
@@ -117,6 +154,9 @@ const loading = ref(false)
 const error = ref('')
 const q = ref('')
 const items = ref([])
+//
+const startPeriod = ref(1)
+const endPeriod = ref(3)
 
 // CRUD form
 const form = ref({
@@ -195,6 +235,16 @@ function openCreate() {
 function closeForm() {
   showForm.value = false
 }
+
+function fixPeriod() {
+  if (startPeriod.value > endPeriod.value) {
+    startPeriod.value = endPeriod.value
+  }
+  if (endPeriod.value < startPeriod.value) {
+    endPeriod.value = startPeriod.value
+  }
+}
+
 async function save(payload) {
   loading.value = true
   try {
@@ -235,11 +285,20 @@ async function confirmBorrow() {
   }
 
   // Chuẩn bị dữ liệu gửi API
+  // const payload = {
+  //   userId: auth.userId, // Lấy từ tài khoản đăng nhập
+  //   modelId: selectedModel.value.modelId, // Lấy từ model đang chọn
+  //   usageLocation: usageLocation.value.trim(),
+  //   purpose: usagePurpose.value.trim(),
+  // }
+
   const payload = {
-    userId: auth.userId, // Lấy từ tài khoản đăng nhập
-    modelId: selectedModel.value.modelId, // Lấy từ model đang chọn
+    userId: auth.userId,
+    modelId: selectedModel.value.modelId,
     usageLocation: usageLocation.value.trim(),
     purpose: usagePurpose.value.trim(),
+    startPeriod: startPeriod.value,
+    endPeriod: endPeriod.value,
   }
 
   console.log('📦 Payload gửi đi:', payload) // 👈 thêm dòng này
@@ -447,5 +506,86 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.period-slider-container {
+  width: 100%;
+  padding-top: 10px;
+}
+
+/* Label 1 đến 15 */
+.labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.period-label {
+  font-size: 11px;
+  color: #555;
+  width: calc(100% / 15);
+  text-align: center;
+}
+
+/* Vùng chứa slider */
+.slider-wrap {
+  position: relative;
+  width: 100%;
+  height: 32px;
+}
+
+/* Thanh highlight */
+.range-highlight {
+  position: absolute;
+  height: 6px;
+  background: #4ade80; /* xanh lá nhạt */
+  border-radius: 3px;
+  top: 10px;
+  left: calc((var(--start) - 1) * (100% / 14));
+  width: calc((var(--end) - var(--start)) * (100% / 14));
+  pointer-events: none;
+}
+
+/* Slider base */
+.slider {
+  position: absolute;
+  top: 6px;
+  width: 100%;
+  -webkit-appearance: none;
+  background: none;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Track xanh lá */
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #22c55e; /* xanh lá */
+  border-radius: 3px;
+}
+
+/* Thumb nhỏ hơn */
+.slider::-webkit-slider-thumb {
+  pointer-events: all;
+  -webkit-appearance: none;
+  width: 14px; /* nhỏ hơn */
+  height: 14px; /* nhỏ hơn */
+  background: #16a34a; /* xanh lá đậm */
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.slider-start {
+  z-index: 3;
+}
+
+.slider-end {
+  z-index: 2;
+}
+
+.result {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>

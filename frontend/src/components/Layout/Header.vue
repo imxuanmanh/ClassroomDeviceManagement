@@ -1,12 +1,10 @@
 <template>
   <header class="header">
     <div class="header-left">
-      <!-- Nút toggle sidebar -->
       <button class="menu-toggle" @click="$emit('toggle-sidebar')">
         <span class="material-icons">menu</span>
       </button>
 
-      <!-- Tiêu đề -->
       <h1 class="app-title">Quản lý Thiết bị</h1>
     </div>
 
@@ -26,6 +24,7 @@
 </template>
 
 <script setup>
+// Script không thay đổi
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -50,25 +49,27 @@ function handleLogout() {
 </script>
 
 <style scoped>
+/* === STYLE ĐÃ ĐƯỢC CẬP NHẬT CHO DARK MODE === */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 64px;
-  background: linear-gradient(90deg, #417c85, #2a5d65);
+  background: #081b29; /* Nền tối chính */
   color: white;
   padding: 0 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(14, 239, 239, 0.2); /* Đổ bóng cyan */
+  border-bottom: 1px solid #0ef; /* Viền cyan */
+  position: relative; /* Thêm để z-index hoạt động */
+  z-index: 5; /* Đảm bảo header nằm trên sidebar 1 chút */
 }
 
-/* ✅ Gom nút menu và tiêu đề thành một nhóm riêng */
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px; /* tạo khoảng cách giữa nút menu và chữ */
+  gap: 12px;
 }
 
-/* Nút menu */
 .menu-toggle {
   background: none;
   border: none;
@@ -84,16 +85,17 @@ function handleLogout() {
   transition: background 0.2s;
 }
 
+/* Style hover này vẫn đẹp, giữ nguyên */
 .menu-toggle:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Tiêu đề */
 .app-title {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.5px;
   margin: 0;
+  color: #0ef; /* Đổi tiêu đề sang màu cyan cho nổi bật */
 }
 
 .profile {
@@ -108,22 +110,24 @@ function handleLogout() {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid #0ef; /* Viền avatar cyan */
 }
 
+/* Dropdown menu */
 .dropdown {
   position: absolute;
   right: 0;
   top: 48px;
-  background: white;
-  color: #333;
+  background: #081b29; /* Nền tối */
+  color: #fff; /* Chữ trắng */
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(14, 239, 239, 0.2); /* Đổ bóng cyan */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 140px;
   z-index: 10;
+  border: 1px solid #0ef; /* Viền cyan */
 }
 
 .dropdown button {
@@ -134,10 +138,11 @@ function handleLogout() {
   width: 100%;
   cursor: pointer;
   transition: background 0.2s;
+  color: #fff; /* Chữ trắng */
 }
 
 .dropdown button:hover {
-  background: #f2f8f8;
-  color: #417c85;
+  background: rgba(14, 239, 239, 0.1); /* Nền cyan mờ */
+  color: #0ef; /* Chữ cyan */
 }
 </style>
