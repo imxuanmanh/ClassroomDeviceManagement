@@ -42,33 +42,49 @@
 
             <div class="period-slider-container">
               <div class="labels">
-                <span v-for="i in 15" :key="i" class="period-label">{{ i }}</span>
+                <span
+                  v-for="(period, index) in validPeriods"
+                  :key="period"
+                  class="period-label"
+                  :style="{ left: `calc(${(index / (validPeriods.length - 1)) * 100}% + 7px)` }"
+                >
+                  {{ period }}
+                </span>
               </div>
 
               <div class="slider-wrap">
-                <div class="range-highlight"></div>
+                <div class="slider-track-bg"></div>
+                <div
+                  class="range-highlight"
+                  :style="{
+                    left: getPeriodPosition(startPeriodIndex) + '%',
+                    width:
+                      getPeriodPosition(endPeriodIndex) - getPeriodPosition(startPeriodIndex) + '%',
+                  }"
+                ></div>
 
                 <input
                   type="range"
-                  min="1"
-                  max="15"
-                  v-model="startPeriod"
-                  @input="fixPeriod"
+                  min="0"
+                  :max="validPeriods.length - 1"
+                  v-model.number="startPeriodIndex"
+                  @input="fixPeriod(true)"
                   class="slider slider-start"
                 />
 
                 <input
                   type="range"
-                  min="1"
-                  max="15"
-                  v-model="endPeriod"
-                  @input="fixPeriod"
+                  min="0"
+                  :max="validPeriods.length - 1"
+                  v-model.number="endPeriodIndex"
+                  @input="fixPeriod(false)"
                   class="slider slider-end"
                 />
               </div>
 
               <div class="result">
-                Tiết bắt đầu: {{ startPeriod }} – Tiết kết thúc: {{ endPeriod }}
+                Tiết bắt đầu: {{ validPeriods[startPeriodIndex] }} – Tiết kết thúc:
+                {{ validPeriods[endPeriodIndex] }}
               </div>
             </div>
           </div>
@@ -140,9 +156,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
-import { deviceApi, categoryApi } from '@/config/api'
+import { deviceApi, categoryApi, borrowApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
-import { borrowApi } from '@/config/api'
+
 const auth = useAuthStore()
 const isAdmin = auth.roleId === 1
 
@@ -154,9 +170,13 @@ const loading = ref(false)
 const error = ref('')
 const q = ref('')
 const items = ref([])
-//
-const startPeriod = ref(1)
-const endPeriod = ref(3)
+
+// Danh sách tiết hợp lệ (bỏ tiết 5 và 15)
+const validPeriods = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+// Index trong mảng validPeriods
+const startPeriodIndex = ref(0) // tương ứng tiết 1
+const endPeriodIndex = ref(2) // tương ứng tiết 3
 
 // CRUD form
 const form = ref({
@@ -218,6 +238,24 @@ function backToCategories() {
   selectedCategory.value = null
 }
 
+// Hàm tính vị trí % dựa vào index
+function getPeriodPosition(index) {
+  return (index / (validPeriods.length - 1)) * 100
+}
+
+// Sửa hàm fixPeriod để làm việc với index
+function fixPeriod(isStart) {
+  if (isStart) {
+    if (startPeriodIndex.value > endPeriodIndex.value) {
+      startPeriodIndex.value = endPeriodIndex.value
+    }
+  } else {
+    if (endPeriodIndex.value < startPeriodIndex.value) {
+      endPeriodIndex.value = startPeriodIndex.value
+    }
+  }
+}
+
 // CRUD
 function openCreate() {
   showForm.value = true
@@ -232,17 +270,9 @@ function openCreate() {
     availableQuantity: 0,
   }
 }
+
 function closeForm() {
   showForm.value = false
-}
-
-function fixPeriod() {
-  if (startPeriod.value > endPeriod.value) {
-    startPeriod.value = endPeriod.value
-  }
-  if (endPeriod.value < startPeriod.value) {
-    endPeriod.value = startPeriod.value
-  }
 }
 
 async function save(payload) {
@@ -267,6 +297,8 @@ function openBorrowForm(model) {
   selectedModel.value = model
   usageLocation.value = ''
   usagePurpose.value = ''
+  startPeriodIndex.value = 0
+  endPeriodIndex.value = 2
   showBorrowForm.value = true
 }
 
@@ -275,7 +307,6 @@ function closeBorrowForm() {
 }
 
 async function confirmBorrow() {
-  // Kiểm tra model được chọn
   if (!selectedModel.value) return
 
   // Kiểm tra dữ liệu nhập
@@ -284,33 +315,29 @@ async function confirmBorrow() {
     return
   }
 
-  // Chuẩn bị dữ liệu gửi API
-  // const payload = {
-  //   userId: auth.userId, // Lấy từ tài khoản đăng nhập
-  //   modelId: selectedModel.value.modelId, // Lấy từ model đang chọn
-  //   usageLocation: usageLocation.value.trim(),
-  //   purpose: usagePurpose.value.trim(),
-  // }
+  // Lấy tiết thực tế từ validPeriods
+  const startPeriodValue = validPeriods[startPeriodIndex.value]
+  const endPeriodValue = validPeriods[endPeriodIndex.value]
 
+  // Chuẩn bị payload theo đúng format API
   const payload = {
     userId: auth.userId,
     modelId: selectedModel.value.modelId,
     usageLocation: usageLocation.value.trim(),
+    startPeriod: startPeriodValue,
+    endPeriod: endPeriodValue,
     purpose: usagePurpose.value.trim(),
-    startPeriod: startPeriod.value,
-    endPeriod: endPeriod.value,
   }
 
-  console.log('📦 Payload gửi đi:', payload) // 👈 thêm dòng này
+  console.log('📦 Payload gửi đi:', payload)
+  console.log(`🕐 Tiết: ${startPeriodValue} → ${endPeriodValue}`)
 
   try {
-    // Gọi API POST /api/borrow-requests
     const result = await borrowApi.create(payload)
-
     console.log('✅ Borrow request sent:', result)
-    alert('✅ Yêu cầu mượn thiết bị đã được gửi thành công!')
-
-    // Đóng form
+    alert(
+      `✅ Yêu cầu mượn thiết bị đã được gửi thành công!\n📍 Tiết ${startPeriodValue} đến tiết ${endPeriodValue}`,
+    )
     showBorrowForm.value = false
   } catch (err) {
     console.error('❌ Lỗi khi gửi yêu cầu mượn:', err)
@@ -447,7 +474,8 @@ onMounted(() => {
   background: white;
   padding: 20px;
   border-radius: 10px;
-  width: 360px;
+  width: 400px;
+  max-width: 90vw;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   animation: fadeIn 0.3s ease;
 }
@@ -464,6 +492,7 @@ onMounted(() => {
   font-size: 14px;
   color: #374151;
   margin-bottom: 4px;
+  font-weight: 500;
 }
 .field input {
   padding: 6px 8px;
@@ -508,84 +537,141 @@ onMounted(() => {
   }
 }
 
+/* Period Slider */
 .period-slider-container {
   width: 100%;
   padding-top: 10px;
 }
 
-/* Label 1 đến 15 */
+/* Labels - chỉ hiển thị các tiết hợp lệ */
 .labels {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
+  position: relative;
+  margin-bottom: 12px;
+  padding: 0;
+  height: 24px;
 }
 
 .period-label {
-  font-size: 11px;
-  color: #555;
-  width: calc(100% / 15);
-  text-align: center;
+  position: absolute;
+  font-size: 13px;
+  color: #374151;
+  font-weight: 600;
+  transform: translateX(-50%);
+  user-select: none;
 }
 
 /* Vùng chứa slider */
 .slider-wrap {
   position: relative;
   width: 100%;
-  height: 32px;
+  height: 40px;
+  margin-top: 0;
+}
+
+.slider-track-bg {
+  position: absolute;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  top: 17px;
+  width: 100%;
+  z-index: 1;
 }
 
 /* Thanh highlight */
 .range-highlight {
   position: absolute;
   height: 6px;
-  background: #4ade80; /* xanh lá nhạt */
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
   border-radius: 3px;
-  top: 10px;
-  left: calc((var(--start) - 1) * (100% / 14));
-  width: calc((var(--end) - var(--start)) * (100% / 14));
+  top: 17px;
   pointer-events: none;
+  transition:
+    left 0.2s ease,
+    width 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
 /* Slider base */
 .slider {
   position: absolute;
-  top: 6px;
+  top: 0;
   width: 100%;
+  height: 40px;
   -webkit-appearance: none;
   background: none;
-  pointer-events: none;
-  height: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
 }
 
-/* Track xanh lá */
+/* Track */
 .slider::-webkit-slider-runnable-track {
-  height: 6px;
-  background: #22c55e; /* xanh lá */
-  border-radius: 3px;
+  height: 40px;
+  background: transparent;
 }
 
-/* Thumb nhỏ hơn */
+.slider::-moz-range-track {
+  height: 40px;
+  background: transparent;
+}
+
+/* Thumb được thiết kế đẹp hơn */
 .slider::-webkit-slider-thumb {
   pointer-events: all;
   -webkit-appearance: none;
-  width: 14px; /* nhỏ hơn */
-  height: 14px; /* nhỏ hơn */
-  background: #16a34a; /* xanh lá đậm */
-  border-radius: 3px;
-  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border: 3px solid #10b981;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+  margin-top: 11px;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+}
+
+.slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+/* Firefox */
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border: 3px solid #10b981;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border: none;
 }
 
 .slider-start {
-  z-index: 3;
+  z-index: 4;
 }
 
 .slider-end {
-  z-index: 2;
+  z-index: 3;
 }
 
 .result {
-  margin-top: 6px;
+  margin-top: 12px;
   font-size: 13px;
   font-weight: 600;
+  color: #10b981;
+  text-align: center;
+  padding: 8px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
 }
 </style>

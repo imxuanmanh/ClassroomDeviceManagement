@@ -59,6 +59,9 @@ const menu = computed(() => {
         title: 'Thiết bị của tôi',
         items: [{ to: '/devices', icon: 'devices', label: 'Thiết bị' }],
       },
+      {
+        items: [{ to: '/history-user', icon: 'history', label: 'Lịch sử' }],
+      },
     ]
   }
 })

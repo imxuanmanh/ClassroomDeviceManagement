@@ -1,6 +1,6 @@
 <template>
   <div class="requests-page">
-    <h1>📩 Danh sách yêu cầu mượn thiết bị</h1>
+    <h1>📩 Lịch sử yêu cầu mượn thiết bị</h1>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -72,8 +72,6 @@
               <td>{{ formatDate(req.requestDate) }}</td>
               <td>{{ formatDate(req.acceptedDate) }}</td>
               <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
-
-              <!-- ❌ Không hiển thị req.location và req.purpose -->
               <td class="actions">
                 <button class="return-btn" @click="returnDevice(index)">Trả lại</button>
               </td>
@@ -83,8 +81,8 @@
         <p v-else>Chưa có yêu cầu nào được chấp nhận.</p>
       </div>
 
-      <!-- TAB: Đã từ chối -->
-      <div v-else-if="activeTab === 'Đã từ chối'">
+      <!-- TAB: Bị từ chối -->
+      <div v-else-if="activeTab === 'Bị từ chối'">
         <table class="request-table" v-if="rejectedRequests.length">
           <thead>
             <tr>
@@ -92,7 +90,6 @@
               <th>Tên thiết bị</th>
               <th>Mã thiết bị</th>
               <th>Ngày yêu cầu</th>
-              <!-- ❌ Bỏ Nơi sử dụng và Mục đích -->
             </tr>
           </thead>
           <tbody>
@@ -101,42 +98,10 @@
               <td>{{ req.deviceName }}</td>
               <td>{{ req.deviceCode }}</td>
               <td>{{ formatDate(req.requestDate) }}</td>
-              <!-- ❌ Không hiển thị req.location và req.purpose -->
             </tr>
           </tbody>
         </table>
         <p v-else>Không có yêu cầu nào bị từ chối.</p>
-      </div>
-
-      <!-- TAB: Đã trả lại -->
-      <div v-else-if="activeTab === 'Đã trả lại'">
-        <table class="request-table" v-if="returnedRequests.length">
-          <thead>
-            <tr>
-              <th>Người mượn</th>
-              <th>Tên thiết bị</th>
-              <th>Mã thiết bị</th>
-              <th>Ngày yêu cầu</th>
-              <th>Ngày chấp nhận</th>
-              <th>Ngày trả</th>
-              <th>Nơi sử dụng</th>
-              <th>Mục đích</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(req, index) in returnedRequests" :key="index">
-              <td>{{ req.user }}</td>
-              <td>{{ req.deviceName }}</td>
-              <td>{{ req.deviceCode }}</td>
-              <td>{{ formatDate(req.requestDate) }}</td>
-              <td>{{ formatDate(req.acceptedDate) }}</td>
-              <td>{{ formatDate(req.returnDate) }}</td>
-              <td>{{ req.location }}</td>
-              <td>{{ req.purpose }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else>Chưa có thiết bị nào được trả lại.</p>
       </div>
     </div>
   </div>
@@ -147,14 +112,13 @@ import { ref, onMounted, watch } from 'vue'
 import { borrowApi } from '@/config/api.js'
 
 // Tabs
-const tabs = ['Đang đợi', 'Đã chấp nhận', 'Đã từ chối', 'Đã trả lại']
+const tabs = ['Đang đợi', 'Đã chấp nhận', 'Bị từ chối']
 const activeTab = ref('Đang đợi')
 
 // Dữ liệu theo trạng thái
 const pendingRequests = ref([])
 const acceptedRequests = ref([])
 const rejectedRequests = ref([])
-const returnedRequests = ref([])
 
 // Trạng thái tải
 const loading = ref(false)
@@ -172,8 +136,7 @@ async function fetchRequestsByStatus(status) {
     const mapStatus = {
       'Đang đợi': 'pending',
       'Đã chấp nhận': 'approved',
-      'Đã từ chối': 'rejected',
-      'Đã trả lại': 'returned',
+      'Bị từ chối': 'rejected',
     }
 
     const apiStatus = mapStatus[status]
@@ -189,19 +152,14 @@ async function fetchRequestsByStatus(status) {
       startPeriod: item.startPeriod,
       endPeriod: item.endPeriod,
       acceptedDate: item.approvedDate,
-      returnDate: item.returnDate,
       location: item.location || item.usageLocation || '—',
       purpose: item.purpose || '—',
-
-      // ⭐ Thêm 2 dòng này
-
       status: item.status || status,
     }))
 
     if (status === 'Đang đợi') pendingRequests.value = mapped
     if (status === 'Đã chấp nhận') acceptedRequests.value = mapped
-    if (status === 'Đã từ chối') rejectedRequests.value = mapped
-    if (status === 'Đã trả lại') returnedRequests.value = mapped
+    if (status === 'Bị từ chối') rejectedRequests.value = mapped
   } catch (err) {
     console.error(`❌ Lỗi khi tải dữ liệu [${status}]:`, err)
     error.value = `Không thể tải dữ liệu trạng thái "${status}".`
@@ -276,105 +234,9 @@ async function returnDevice(index) {
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(
-    2,
-    '0',
-  )}/${date.getFullYear()}`
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 }
 </script>
-
-<!-- <script setup>
-import { ref, onMounted } from 'vue'
-import { borrowApi } from '@/config/api.js' // 👈 đường dẫn đúng tới file bạn gửi
-
-// Tabs
-const tabs = ['Đang đợi', 'Đã chấp nhận', 'Đã từ chối', 'Đã trả lại']
-const activeTab = ref('Đang đợi')
-
-// Dữ liệu
-const pendingRequests = ref([])
-const acceptedRequests = ref([])
-const rejectedRequests = ref([])
-const returnedRequests = ref([])
-
-// Hàm gọi API
-
-async function fetchPendingRequests() {
-  try {
-    const data = await borrowApi.getAll()
-    console.log('📦 Dữ liệu từ API:', data)
-
-    // Dữ liệu API đã là mảng
-    pendingRequests.value = data.map((item) => ({
-      requestId: item.requestId,
-      user: item.borrower || 'Không rõ',
-      deviceName: item.deviceName,
-      deviceCode: item.instanceCode,
-      requestDate: new Date(item.requestDate).toLocaleString(),
-      location: item.location || item.usageLocation || '—',
-      purpose: item.purpose || '—',
-      status: item.status || 'Pending',
-    }))
-  } catch (error) {
-    console.error('❌ Lỗi khi tải danh sách yêu cầu:', error)
-  }
-}
-
-onMounted(() => {
-  fetchPendingRequests()
-})
-
-// 👉 Hàm format ngày dd/mm/yyyy
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
-// Xử lý yêu cầu
-async function acceptRequest(index) {
-  const req = pendingRequests.value[index]
-  try {
-    const result = await borrowApi.approveRequest(req.requestId)
-
-    if (result.ok) {
-      alert(`✅ Thành công (${result.status}): ${result.message}`)
-      const accepted = { ...req, acceptedDate: new Date().toISOString() }
-      acceptedRequests.value.push(accepted)
-      pendingRequests.value.splice(index, 1)
-    } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
-    }
-  } catch (error) {
-    console.error('❌ Lỗi khi chấp nhận yêu cầu:', error)
-    alert('❌ Đã xảy ra lỗi kết nối đến máy chủ.')
-  }
-}
-
-async function rejectRequest(index) {
-  const req = pendingRequests.value[index]
-  try {
-    await borrowApi.rejectRequest(req.requestId)
-    console.log(`❌ Đã từ chối yêu cầu ID ${req.requestId}`)
-    rejectedRequests.value.push(req)
-    pendingRequests.value.splice(index, 1)
-  } catch (error) {
-    console.error('Lỗi khi từ chối yêu cầu:', error)
-    alert('Không thể từ chối yêu cầu.')
-  }
-}
-
-function returnDevice(index) {
-  const req = acceptedRequests.value[index]
-  const returned = { ...req, returnDate: new Date().toISOString() }
-  console.log('↩️ Thiết bị đã được trả lại:', returned)
-  returnedRequests.value.push(returned)
-  acceptedRequests.value.splice(index, 1)
-}
-</script> -->
 
 <style scoped>
 .requests-page {

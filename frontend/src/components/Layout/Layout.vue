@@ -73,7 +73,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 .content {
   flex: 1;
   /* === THAY ĐỔI MÀU NỀN VÀ CHỮ === */
-  color: #fff; /* Chữ mặc định là màu trắng */
+  color: black; /* Chữ mặc định là màu trắng */
   padding: 24px;
   background: linear-gradient(135deg, #e8fff8, #d2fff0, #b8f5e1);
 }

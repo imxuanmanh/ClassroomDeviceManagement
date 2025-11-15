@@ -38,6 +38,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/history-user',
+      component: () => import('@/views/HistoryUser.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/user-borrow',
       component: () => import('@/views/UserBorrow.vue'),
       meta: { requiresAuth: true },

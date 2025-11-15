@@ -11,6 +11,7 @@ export const API_CONFIG = {
     BORROWS: '/borrow-requests',
     HISTORY: '/history',
     REPORTS: '/reports',
+   
   },
 
   TIMEOUT: 10000,
