@@ -106,6 +106,90 @@ onMounted(fetchUsers)
 <style scoped>
 .users {
   padding: 16px 12px;
+  color: #eeeeee; /* ✅ Chữ chính */
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-header h2 {
+  margin: 0;
+  color: #00adb5; /* ✅ Chữ nhấn */
+  text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Nút "Thêm người dùng" */
+.actions button {
+  background: #00adb5; /* Nền nhấn */
+  color: #222831; /* Chữ tối để tương phản */
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.actions button:hover {
+  background: #eeeeee;
+  color: #222831;
+}
+
+/* Lớp .form-box không được dùng trong template nên tôi đã bỏ qua */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #393e46; /* Nền phụ */
+  border-radius: 12px;
+  overflow: hidden;
+  /* Thêm viền và bóng cho nhất quán */
+  border: 1px solid rgba(0, 173, 181, 0.2);
+  box-shadow: 0 0 20px rgba(0, 173, 181, 0.15);
+}
+.table th,
+.table td {
+  border: 1px solid rgba(0, 173, 181, 0.15); /* Viền nhấn mờ */
+  padding: 10px 12px;
+  text-align: left;
+}
+.table th {
+  background: #222831; /* Nền chính */
+  color: #00adb5; /* ✅ Chữ nhấn */
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+/* Thêm hover cho hàng */
+.table tbody tr:hover {
+  background: rgba(0, 173, 181, 0.05);
+}
+
+/* Cột vai trò */
+.table td:last-child {
+  color: rgba(238, 238, 238, 0.9);
+  font-weight: 500;
+}
+
+.error {
+  color: #ff8a80; /* Màu đỏ sáng dễ đọc */
+  margin-bottom: 8px;
+  background: rgba(255, 138, 128, 0.1);
+  border: 1px solid rgba(255, 138, 128, 0.3);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+</style>
+
+<!-- <style scoped>
+.users {
+  padding: 16px 12px;
 }
 .page-header {
   display: flex;
@@ -153,4 +237,4 @@ onMounted(fetchUsers)
   color: #b91c1c;
   margin-bottom: 8px;
 }
-</style>
+</style> -->

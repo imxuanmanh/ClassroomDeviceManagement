@@ -3,7 +3,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.105:5129/api',
+  BASE_URL: 'http://172.16.1.28:5129/api',
 
   ENDPOINTS: {
     DEVICES: '/device',
@@ -11,7 +11,6 @@ export const API_CONFIG = {
     BORROWS: '/borrow-requests',
     HISTORY: '/history',
     REPORTS: '/reports',
-   
   },
 
   TIMEOUT: 10000,
@@ -114,6 +113,16 @@ export const userApi = {
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
       method: 'DELETE',
     }),
+
+  // ✅ Đổi tên phương thức
+  getPendingRequests: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/pending`),
+
+  getApprovedRequests: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/approved`),
+
+  getRejectedRequests: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/rejected`),
 }
 
 /**

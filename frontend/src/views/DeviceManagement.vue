@@ -326,6 +326,7 @@ function formatDate(dateStr) {
 <style scoped>
 .device {
   padding: 16px 12px;
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 .page-header {
   display: flex;
@@ -335,12 +336,14 @@ function formatDate(dateStr) {
 }
 .page-header h2 {
   margin: 0;
-  color: #111827;
+  color: #00adb5; /* ✅ Chữ nhấn */
+  text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
 }
 .content {
-  background: #fff;
+  background: #393e46;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 20px rgba(0, 173, 181, 0.15);
+  border: 1px solid rgba(0, 173, 181, 0.2);
   padding: 16px;
 }
 
@@ -356,26 +359,40 @@ function formatDate(dateStr) {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #222831;
+  border: 1px solid rgba(0, 173, 181, 0.2);
   border-radius: 12px;
   height: 120px;
   cursor: pointer;
   transition: 0.2s;
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 .category-card:hover {
-  background: #eff6ff;
-  border-color: #2563eb;
+  background: rgba(0, 173, 181, 0.1);
+  border-color: #00adb5;
   transform: translateY(-3px);
+  color: #00adb5; /* ✅ Chữ nhấn */
 }
 .add-category-card {
-  border: 2px dashed #93c5fd;
-  color: #2563eb;
+  border: 2px dashed rgba(0, 173, 181, 0.5);
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
+  background: transparent;
+}
+.add-category-card:hover {
+  background: rgba(0, 173, 181, 0.1);
+  border-color: #00adb5;
 }
 .add-category-card .plus {
   font-size: 36px;
 }
+.empty {
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  text-align: center;
+  padding: 20px;
+}
+
+/* Models View */
 .models-header {
   display: flex;
   justify-content: space-between;
@@ -387,9 +404,12 @@ function formatDate(dateStr) {
   align-items: center;
   gap: 12px;
 }
+.left-controls h3 {
+  color: #eeeeee; /* ✅ Chữ chính */
+}
 .add-btn {
-  background: #2563eb;
-  color: white;
+  background: #00adb5;
+  color: #222831; /* THAY ĐỔI: Chữ tối để tăng tương phản */
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
@@ -398,17 +418,24 @@ function formatDate(dateStr) {
   transition: 0.2s;
 }
 .add-btn:hover {
-  background: #1e40af;
+  background: #eeeeee;
+  color: #222831; /* THÊM: Đảm bảo chữ rõ trên nền hover */
 }
 .back-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 20px;
   padding: 4px 8px;
+  transition: 0.2s;
 }
+.back-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Tables */
 .models-table table {
   width: 100%;
   border-collapse: collapse;
@@ -416,31 +443,70 @@ function formatDate(dateStr) {
 }
 .models-table th,
 .models-table td {
-  border: 1px solid #e5e7eb;
-  padding: 8px 10px;
+  border: 1px solid rgba(0, 173, 181, 0.15);
+  padding: 10px 12px;
   text-align: left;
 }
+/* Hàng <td> trong <tbody> sẽ kế thừa .device -> #eeeeee (Chữ chính) */
+
 .models-table th {
-  background: #f9fafb;
+  background: #222831;
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.models-table tr:hover td {
+  background: rgba(0, 173, 181, 0.05);
 }
 
-/* ✅ Sub table */
+/* THÊM: Áp dụng chữ phụ cho dòng "Không có dữ liệu" */
+.models-table td[colspan='7'],
+.sub-table td[colspan='5'] {
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  text-align: center;
+}
+
+/* Nút hành động trong bảng */
+.action-cell {
+  text-align: center;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  color: #00adb5; /* ✅ Chữ nhấn */
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+.icon-btn:hover {
+  transform: scale(1.2);
+}
+
+/* Bảng con (sub-table) */
+.model-details > td {
+  padding: 12px;
+  background: #222831;
+}
 .sub-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 6px;
-  background: #f9fafb;
+  background: #222831;
 }
 .sub-table th,
 .sub-table td {
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
+  border: 1px solid rgba(0, 173, 181, 0.1);
+  padding: 8px 10px;
   font-size: 13px;
 }
+/* Hàng <td> trong <tbody> sẽ kế thừa .device -> #eeeeee (Chữ chính) */
+
 .sub-table th {
-  background: #eef2ff;
+  background: #393e46;
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
+  font-size: 12px;
 }
 .sub-table th:nth-child(4),
 .sub-table th:nth-child(5),

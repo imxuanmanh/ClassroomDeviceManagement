@@ -37,55 +37,32 @@
           </div>
 
           <!-- Thanh trượt chọn tiết -->
+          <!-- Thanh trượt chọn tiết (Multi Range Slider) -->
           <div class="field">
             <label>Chọn tiết sử dụng</label>
-
-            <div class="period-slider-container">
-              <div class="labels">
-                <span
-                  v-for="(period, index) in validPeriods"
-                  :key="period"
-                  class="period-label"
-                  :style="{ left: `calc(${(index / (validPeriods.length - 1)) * 100}% + 7px)` }"
-                >
-                  {{ period }}
-                </span>
+            <div class="multi-range-slider">
+              <input
+                type="range"
+                id="input-left"
+                :min="0"
+                :max="validPeriods.length - 1"
+                v-model.number="startPeriodIndex"
+              />
+              <input
+                type="range"
+                id="input-right"
+                :min="0"
+                :max="validPeriods.length - 1"
+                v-model.number="endPeriodIndex"
+              />
+              <div class="slider">
+                <div class="track"></div>
+                <div class="range" ref="rangeElement"></div>
               </div>
-
-              <div class="slider-wrap">
-                <div class="slider-track-bg"></div>
-                <div
-                  class="range-highlight"
-                  :style="{
-                    left: getPeriodPosition(startPeriodIndex) + '%',
-                    width:
-                      getPeriodPosition(endPeriodIndex) - getPeriodPosition(startPeriodIndex) + '%',
-                  }"
-                ></div>
-
-                <input
-                  type="range"
-                  min="0"
-                  :max="validPeriods.length - 1"
-                  v-model.number="startPeriodIndex"
-                  @input="fixPeriod(true)"
-                  class="slider slider-start"
-                />
-
-                <input
-                  type="range"
-                  min="0"
-                  :max="validPeriods.length - 1"
-                  v-model.number="endPeriodIndex"
-                  @input="fixPeriod(false)"
-                  class="slider slider-end"
-                />
-              </div>
-
-              <div class="result">
-                Tiết bắt đầu: {{ validPeriods[startPeriodIndex] }} – Tiết kết thúc:
-                {{ validPeriods[endPeriodIndex] }}
-              </div>
+            </div>
+            <div class="price__wrapper">
+              <span class="price-from">Tiết: {{ validPeriods[startPeriodIndex] }}</span>
+              <span class="price-to">Tiết: {{ validPeriods[endPeriodIndex] }}</span>
             </div>
           </div>
 
@@ -197,11 +174,68 @@ const selectedModel = ref(null)
 const usageLocation = ref('')
 const usagePurpose = ref('')
 
-// Fetch categories
-async function fetchCategories() {
+// async function fetchCategories() {
+//   loading.value = true
+//   try {
+//     categories.value = await categoryApi.getAll()
+//   } catch {
+//     error.value = 'Không thể tải danh sách loại thiết bị'
+//   } finally {
+//     loading.value = false
+//   }
+// }
+
+// async function fetchDevices() {
+//   loading.value = true
+//   try {
+//     const data = await deviceApi.getAll()
+//     items.value = Array.isArray(data) ? data : []
+//   } catch {
+//     error.value = 'Không thể tải danh sách thiết bị'
+//   } finally {
+//     loading.value = false
+//   }
+// }
+
+// Thay thế fetchCategories và fetchDevices bằng dữ liệu giả lập
+function fetchCategories() {
   loading.value = true
   try {
-    categories.value = await categoryApi.getAll()
+    categories.value = [
+      { id: 1, name: 'Laptop' },
+      { id: 2, name: 'Máy chiếu' },
+    ]
+    // Gán luôn dữ liệu models cho mỗi category
+    modelsByCategory.value = {
+      1: [
+        {
+          modelId: 101,
+          modelName: 'Dell XPS 13',
+          specifications: 'i7, 16GB RAM, 512GB SSD',
+          storageLocation: 'A1',
+          totalQuantity: 5,
+          availableQuantity: 3,
+        },
+        {
+          modelId: 102,
+          modelName: 'MacBook Pro 14',
+          specifications: 'M1 Pro, 16GB RAM, 1TB SSD',
+          storageLocation: 'A2',
+          totalQuantity: 2,
+          availableQuantity: 2,
+        },
+      ],
+      2: [
+        {
+          modelId: 201,
+          modelName: 'Epson EB-X41',
+          specifications: '3000 lumens, XGA',
+          storageLocation: 'B1',
+          totalQuantity: 1,
+          availableQuantity: 1,
+        },
+      ],
+    }
   } catch {
     error.value = 'Không thể tải danh sách loại thiết bị'
   } finally {
@@ -209,17 +243,9 @@ async function fetchCategories() {
   }
 }
 
-// Fetch all devices
-async function fetchDevices() {
-  loading.value = true
-  try {
-    const data = await deviceApi.getAll()
-    items.value = Array.isArray(data) ? data : []
-  } catch {
-    error.value = 'Không thể tải danh sách thiết bị'
-  } finally {
-    loading.value = false
-  }
+function fetchDevices() {
+  // Không cần fetch thực, chỉ để items rỗng hoặc bạn có thể thêm vài device demo
+  items.value = []
 }
 
 // Khi nhấn 1 category
@@ -349,11 +375,36 @@ onMounted(() => {
   fetchDevices()
   fetchCategories()
 })
+
+import { watch } from 'vue'
+
+const rangeElement = ref(null) // Tham chiếu .range
+
+// Cập nhật vị trí range khi startPeriodIndex thay đổi
+watch(startPeriodIndex, () => {
+  const min = 0
+  const max = validPeriods.length - 1
+  const leftPercent = ((startPeriodIndex.value - min) / (max - min)) * 100
+  if (rangeElement.value) {
+    rangeElement.value.style.left = `${leftPercent}%`
+  }
+})
+
+// Cập nhật khi endPeriodIndex thay đổi
+watch(endPeriodIndex, () => {
+  const min = 0
+  const max = validPeriods.length - 1
+  const rightPercent = ((endPeriodIndex.value - min) / (max - min)) * 100
+  if (rangeElement.value) {
+    rangeElement.value.style.right = `${100 - rightPercent}%`
+  }
+})
 </script>
 
 <style scoped>
 .device {
   padding: 16px 12px;
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 .page-header {
   display: flex;
@@ -363,21 +414,50 @@ onMounted(() => {
 }
 .page-header h2 {
   margin: 0;
-  color: #111827;
+  color: #00adb5; /* ✅ Chữ nhấn */
+  text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
 }
 .actions {
   display: flex;
   gap: 8px;
 }
+/* Cập nhật ô tìm kiếm */
 .actions input {
-  padding: 6px 8px;
-  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 173, 181, 0.3);
+  background: #222831;
+  color: #eeeeee;
   border-radius: 8px;
+  transition: all 0.2s;
 }
+.actions input:focus {
+  outline: none;
+  border-color: #00adb5;
+  box-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
+}
+.actions input::placeholder {
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+}
+/* Nút "Thêm" của Admin */
+.actions button {
+  background: #00adb5;
+  color: #222831;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.actions button:hover {
+  background: #eeeeee;
+}
+
 .content {
-  background: #fff;
+  background: #393e46; /* Nền phụ */
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 20px rgba(0, 173, 181, 0.15);
+  border: 1px solid rgba(0, 173, 181, 0.2);
   padding: 16px;
 }
 
@@ -389,8 +469,8 @@ onMounted(() => {
   margin-top: 16px;
 }
 .category-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #222831; /* Nền chính */
+  border: 1px solid rgba(0, 173, 181, 0.2);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
@@ -399,11 +479,17 @@ onMounted(() => {
 }
 .category-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #00adb5;
+  background: rgba(0, 173, 181, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 173, 181, 0.1);
 }
 .category-card h3 {
   margin: 0;
-  color: #111827;
+  color: #eeeeee; /* ✅ Chữ chính */
+  transition: color 0.2s;
+}
+.category-card:hover h3 {
+  color: #00adb5; /* ✅ Chữ nhấn */
 }
 
 /* Models table */
@@ -419,15 +505,19 @@ onMounted(() => {
 .back-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
   cursor: pointer;
   font-size: 15px;
   padding: 4px 8px;
   border-radius: 6px;
+  transition: background 0.2s;
 }
 .back-btn:hover {
-  background: #f3f4f6;
+  background: rgba(0, 173, 181, 0.1);
+}
+.models-header h3 {
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 .models-table {
   overflow-x: auto;
@@ -439,49 +529,53 @@ onMounted(() => {
 }
 .models-table th,
 .models-table td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(0, 173, 181, 0.15);
   padding: 8px 10px;
   text-align: left;
 }
 .models-table th {
-  background: #f9fafb;
+  background: #222831;
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
 }
 .borrow-btn {
-  background-color: #2563eb;
-  color: white;
+  background-color: #00adb5; /* ✅ Chữ nhấn */
+  color: #222831; /* Chữ tối để tương phản */
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
+  font-weight: 600;
 }
 .borrow-btn:hover {
-  background-color: #1d4ed8;
+  background-color: #eeeeee;
 }
 
 /* Borrow form modal */
 .borrow-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.7); /* Tối hơn */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 .borrow-form {
-  background: white;
+  background: #393e46; /* Nền phụ */
   padding: 20px;
   border-radius: 10px;
   width: 400px;
   max-width: 90vw;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 30px rgba(0, 173, 181, 0.25);
+  border: 1px solid rgba(0, 173, 181, 0.3);
   animation: fadeIn 0.3s ease;
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 .borrow-form h3 {
   margin-top: 0;
-  color: #111827;
+  color: #00adb5; /* ✅ Chữ nhấn */
 }
 .field {
   display: flex;
@@ -490,14 +584,21 @@ onMounted(() => {
 }
 .field label {
   font-size: 14px;
-  color: #374151;
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
   margin-bottom: 4px;
   font-weight: 500;
 }
 .field input {
   padding: 6px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(0, 173, 181, 0.3);
+  background: #222831;
+  color: #eeeeee;
   border-radius: 6px;
+}
+.field input:focus {
+  outline: none;
+  border-color: #00adb5;
+  box-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
 }
 .actions {
   display: flex;
@@ -506,23 +607,34 @@ onMounted(() => {
   margin-top: 16px;
 }
 .cancel-btn {
-  background: #e5e7eb;
+  background: rgba(238, 238, 238, 0.1);
+  color: #eeeeee;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-btn:hover {
+  background: rgba(238, 238, 238, 0.2);
 }
 .submit-btn {
-  background: #2563eb;
-  color: white;
+  background: #00adb5;
+  color: #222831;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
 }
-.empty {
+.submit-btn:hover {
+  background: #eeeeee;
+}
+.empty,
+td[colspan='7'] {
   text-align: center;
-  color: #6b7280;
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
   padding: 24px 0;
 }
 
@@ -538,140 +650,71 @@ onMounted(() => {
 }
 
 /* Period Slider */
-.period-slider-container {
-  width: 100%;
-  padding-top: 10px;
-}
-
-/* Labels - chỉ hiển thị các tiết hợp lệ */
-.labels {
-  display: flex;
-  position: relative;
-  margin-bottom: 12px;
-  padding: 0;
-  height: 24px;
-}
-
-.period-label {
-  position: absolute;
-  font-size: 13px;
-  color: #374151;
-  font-weight: 600;
-  transform: translateX(-50%);
-  user-select: none;
-}
-
-/* Vùng chứa slider */
-.slider-wrap {
+/* ====================== Thanh trượt chọn tiết ====================== */
+.multi-range-slider {
   position: relative;
   width: 100%;
-  height: 40px;
-  margin-top: 0;
+  height: 2rem;
 }
 
-.slider-track-bg {
-  position: absolute;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  top: 17px;
+input[type='range'] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
   width: 100%;
-  z-index: 1;
-}
-
-/* Thanh highlight */
-.range-highlight {
+  background: transparent;
+  appearance: none;
   position: absolute;
-  height: 6px;
-  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-  border-radius: 3px;
-  top: 17px;
-  pointer-events: none;
-  transition:
-    left 0.2s ease,
-    width 0.2s ease;
-  z-index: 2;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  z-index: 10;
+  height: 100%;
+  pointer-events: all;
 }
 
-/* Slider base */
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  cursor: pointer;
+  border: 0 none;
+  width: 1.8rem;
+  height: 1.8rem;
+  background: #efedfc;
+  border: 0.35rem solid #8e7eeb;
+  border-radius: 50%;
+}
+
 .slider {
   position: absolute;
-  top: 0;
   width: 100%;
-  height: 40px;
-  -webkit-appearance: none;
-  background: none;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
+  top: 0.6rem;
+  z-index: 1;
+  height: 0.8rem;
 }
 
-/* Track */
-.slider::-webkit-slider-runnable-track {
-  height: 40px;
-  background: transparent;
+.slider > .track {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  border-radius: 5rem;
+  background-color: #eeeeee;
 }
 
-.slider::-moz-range-track {
-  height: 40px;
-  background: transparent;
+.slider > .range {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  border-radius: 5rem;
+  background: #cec8f6;
 }
 
-/* Thumb được thiết kế đẹp hơn */
-.slider::-webkit-slider-thumb {
-  pointer-events: all;
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  background: #ffffff;
-  border: 3px solid #10b981;
-  border-radius: 50%;
-  cursor: grab;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s ease;
-  margin-top: 11px;
-}
-
-.slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
-}
-
-.slider::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.15);
-}
-
-/* Firefox */
-.slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  background: #ffffff;
-  border: 3px solid #10b981;
-  border-radius: 50%;
-  cursor: grab;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  border: none;
-}
-
-.slider-start {
-  z-index: 4;
-}
-
-.slider-end {
-  z-index: 3;
-}
-
-.result {
-  margin-top: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #10b981;
-  text-align: center;
-  padding: 8px;
-  background: #f0fdf4;
-  border-radius: 6px;
-  border: 1px solid #d1fae5;
+.price__wrapper {
+  width: 100%;
+  color: #efedfc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.6rem;
+  margin-top: 1rem;
+  font-weight: bold;
 }
 </style>

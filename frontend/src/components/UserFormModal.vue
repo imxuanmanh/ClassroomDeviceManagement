@@ -3,8 +3,13 @@
     <div class="modal-content">
       <h3>Thêm người dùng</h3>
       <input v-model="form.username" placeholder="Tên người dùng" />
-      <input v-model="form.fullname" type="text" placeholder="Họ và tên" />
-      <input v-model="form.password" type="password" placeholder="Mật khẩu" />
+      <input v-model="form.fullname" type="text" placeholder="Họ và tên" autocomplete="off" />
+      <input
+        v-model="form.password"
+        type="password"
+        placeholder="Mật khẩu"
+        autocomplete="new-password"
+      />
       <input v-model="form.email" type="email" placeholder="Email" />
       <select v-model="form.roleId">
         <option disabled value="">Chọn vai trò</option>

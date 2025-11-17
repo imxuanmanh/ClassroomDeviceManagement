@@ -95,7 +95,7 @@ import StatCard from '@/components/Dashboard/StatCard.vue'
 }
 .page-header h2 {
   margin: 0;
-  color: #111827;
+  color: #00adb5;
 }
 .stats {
   display: grid;

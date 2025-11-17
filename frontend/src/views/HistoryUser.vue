@@ -21,10 +21,7 @@
         <table class="request-table" v-if="pendingRequests.length">
           <thead>
             <tr>
-              <th>Người mượn</th>
               <th>Tên thiết bị</th>
-              <th>Mã thiết bị</th>
-              <th>Ngày yêu cầu</th>
               <th>Thời gian</th>
               <th>Nơi sử dụng</th>
               <th>Mục đích</th>
@@ -33,48 +30,37 @@
           </thead>
           <tbody>
             <tr v-for="(req, index) in pendingRequests" :key="index">
-              <td>{{ req.user }}</td>
+              <!-- ❌ Không hiển thị requestId -->
               <td>{{ req.deviceName }}</td>
-              <td>{{ req.deviceCode }}</td>
-              <td>{{ formatDate(req.requestDate) }}</td>
               <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
               <td>{{ req.location }}</td>
               <td>{{ req.purpose }}</td>
-              <td class="actions">
-                <button class="accept-btn" @click="acceptRequest(index)">Chấp nhận</button>
-                <button class="reject-btn" @click="rejectRequest(index)">Từ chối</button>
+              <td>
+                <button class="reject-btn" @click="deletePending(req.requestId)">Xóa</button>
               </td>
             </tr>
           </tbody>
         </table>
+
         <p v-else>Không có yêu cầu nào đang đợi.</p>
       </div>
 
+      <!-- TAB: Đã chấp nhận -->
       <!-- TAB: Đã chấp nhận -->
       <div v-else-if="activeTab === 'Đã chấp nhận'">
         <table class="request-table" v-if="acceptedRequests.length">
           <thead>
             <tr>
-              <th>Người mượn</th>
               <th>Tên thiết bị</th>
               <th>Mã thiết bị</th>
-              <th>Ngày yêu cầu</th>
-              <th>Ngày chấp nhận</th>
-              <th>Thời gian</th>
-              <th>Thao tác</th>
+              <th>Vị trí lưu trữ</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(req, index) in acceptedRequests" :key="index">
-              <td>{{ req.user }}</td>
               <td>{{ req.deviceName }}</td>
               <td>{{ req.deviceCode }}</td>
-              <td>{{ formatDate(req.requestDate) }}</td>
-              <td>{{ formatDate(req.acceptedDate) }}</td>
-              <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
-              <td class="actions">
-                <button class="return-btn" @click="returnDevice(index)">Trả lại</button>
-              </td>
+              <td>{{ req.storageLocation }}</td>
             </tr>
           </tbody>
         </table>
@@ -82,22 +68,25 @@
       </div>
 
       <!-- TAB: Bị từ chối -->
+      <!-- TAB: Bị từ chối -->
       <div v-else-if="activeTab === 'Bị từ chối'">
         <table class="request-table" v-if="rejectedRequests.length">
           <thead>
             <tr>
-              <th>Người mượn</th>
               <th>Tên thiết bị</th>
-              <th>Mã thiết bị</th>
               <th>Ngày yêu cầu</th>
+              <th>Thời gian</th>
+              <th>Nơi sử dụng</th>
+              <th>Mục đích</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(req, index) in rejectedRequests" :key="index">
-              <td>{{ req.user }}</td>
               <td>{{ req.deviceName }}</td>
-              <td>{{ req.deviceCode }}</td>
               <td>{{ formatDate(req.requestDate) }}</td>
+              <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
+              <td>{{ req.location }}</td>
+              <td>{{ req.purpose }}</td>
             </tr>
           </tbody>
         </table>
@@ -109,132 +98,130 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { borrowApi } from '@/config/api.js'
+import { userApi, borrowApi } from '@/config/api.js'
 
 // Tabs
 const tabs = ['Đang đợi', 'Đã chấp nhận', 'Bị từ chối']
 const activeTab = ref('Đang đợi')
 
-// Dữ liệu theo trạng thái
+// Data
 const pendingRequests = ref([])
 const acceptedRequests = ref([])
 const rejectedRequests = ref([])
 
-// Trạng thái tải
 const loading = ref(false)
 const error = ref(null)
 
-/* =========================
-   📦 HÀM GỌI API THEO TRẠNG THÁI
-========================= */
+/* ======================================================
+   📌 HÀM LẤY DỮ LIỆU THEO TRẠNG THÁI
+====================================================== */
 async function fetchRequestsByStatus(status) {
+  console.log('▶️ Fetch tab:', status)
   loading.value = true
   error.value = null
 
   try {
-    // Map tên tab → endpoint backend
-    const mapStatus = {
-      'Đang đợi': 'pending',
-      'Đã chấp nhận': 'approved',
-      'Bị từ chối': 'rejected',
+    const userId = localStorage.getItem('userId')
+
+    // ---- TAB Đang đợi ----
+    if (status === 'Đang đợi') {
+      const data = await userApi.getPendingRequests(userId)
+      console.log('📌 Pending API data:', data)
+      pendingRequests.value = data.map((item) => ({
+        requestId: item.requestId,
+        deviceName: item.deviceName,
+        startPeriod: item.startPeriod,
+        endPeriod: item.endPeriod,
+        location: item.usageLocation,
+        purpose: item.purpose,
+      }))
+      return
     }
 
-    const apiStatus = mapStatus[status]
-    const data = await borrowApi.getByStatus(apiStatus)
-    console.log(`📦 Dữ liệu [${status}]:`, data)
+    // ---- TAB Đã chấp nhận ----
+    if (status === 'Đã chấp nhận') {
+      const data = await userApi.getApprovedRequests(userId)
+      console.log('📌 Approved API data:', data)
+      acceptedRequests.value = data.map((item) => ({
+        requestId: item.requestId,
+        deviceName: item.deviceName,
+        deviceCode: item.instanceCode,
+        storageLocation: item.storageLocation,
+      }))
+      return
+    }
 
-    const mapped = data.map((item) => ({
-      requestId: item.requestId,
-      user: item.borrower || 'Không rõ',
-      deviceName: item.deviceName,
-      deviceCode: item.instanceCode,
-      requestDate: item.requestDate,
-      startPeriod: item.startPeriod,
-      endPeriod: item.endPeriod,
-      acceptedDate: item.approvedDate,
-      location: item.location || item.usageLocation || '—',
-      purpose: item.purpose || '—',
-      status: item.status || status,
-    }))
-
-    if (status === 'Đang đợi') pendingRequests.value = mapped
-    if (status === 'Đã chấp nhận') acceptedRequests.value = mapped
-    if (status === 'Bị từ chối') rejectedRequests.value = mapped
+    // ---- TAB Bị từ chối ----
+    if (status === 'Bị từ chối') {
+      const data = await userApi.getRejectedRequests(userId)
+      console.log('📌 Rejected API data:', data)
+      rejectedRequests.value = data.map((item) => ({
+        requestId: item.requestId,
+        deviceName: item.deviceName,
+        startPeriod: item.startPeriod,
+        endPeriod: item.endPeriod,
+        location: item.usageLocation,
+        purpose: item.purpose,
+        requestDate: item.requestDate,
+      }))
+      return
+    }
   } catch (err) {
-    console.error(`❌ Lỗi khi tải dữ liệu [${status}]:`, err)
-    error.value = `Không thể tải dữ liệu trạng thái "${status}".`
+    console.error('❌ Lỗi:', err)
+    error.value = 'Không thể tải dữ liệu.'
   } finally {
     loading.value = false
   }
 }
 
-/* =========================
-   🧠 CHUYỂN TAB TỰ ĐỘNG GỌI API
-========================= */
-watch(activeTab, (tab) => {
-  fetchRequestsByStatus(tab)
-})
+/* ======================================================
+   🧠 WATCH TAB CHANGE
+====================================================== */
+watch(activeTab, (tab) => fetchRequestsByStatus(tab))
 
-// Lần đầu mở trang → tải tab đầu tiên
-onMounted(() => {
-  fetchRequestsByStatus(activeTab.value)
-})
+onMounted(() => fetchRequestsByStatus(activeTab.value))
 
-/* =========================
-   ⚙️ CÁC HÀNH ĐỘNG: DUYỆT / TỪ CHỐI / TRẢ
-========================= */
-async function acceptRequest(index) {
-  const req = pendingRequests.value[index]
+/* ======================================================
+   ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI
+====================================================== */
+async function deletePending(requestId) {
+  if (!confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
+
   try {
-    const result = await borrowApi.approveRequest(req.requestId)
+    const result = await borrowApi.deletePending(requestId)
     if (result.ok) {
-      alert(`✅ Thành công (${result.status}): ${result.message}`)
-      fetchRequestsByStatus(activeTab.value)
+      alert('🗑️ Đã xóa yêu cầu!')
+      fetchRequestsByStatus('Đang đợi')
     } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
+      alert('❌ Lỗi khi xóa yêu cầu!')
     }
-  } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
+  } catch {
+    alert('❌ Lỗi kết nối đến server')
   }
 }
 
-async function rejectRequest(index) {
-  const req = pendingRequests.value[index]
-  try {
-    const result = await borrowApi.rejectRequest(req.requestId)
-    if (result.ok) {
-      alert(`🚫 Từ chối (${result.status}): ${result.message}`)
-      fetchRequestsByStatus(activeTab.value)
-    } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
-    }
-  } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
-  }
-}
-
+/* ======================================================
+   🪄 CÁC ACTION CŨ GIỮ NGUYÊN
+====================================================== */
 async function returnDevice(index) {
   const req = acceptedRequests.value[index]
-  try {
-    const result = await borrowApi.return(req.requestId)
-    if (result.ok) {
-      alert(`↩️ Đã trả (${result.status}): ${result.message}`)
-      fetchRequestsByStatus(activeTab.value)
-    } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
-    }
-  } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
+  const result = await borrowApi.return(req.requestId)
+  if (result.ok) {
+    alert('↩️ Đã trả!')
+    fetchRequestsByStatus(activeTab.value)
   }
 }
 
-/* =========================
-   🗓️ FORMAT NGÀY
-========================= */
+/* ======================================================
+   🗓 FORMAT NGÀY
+====================================================== */
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+  const d = new Date(dateStr)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}/${d.getFullYear()}`
 }
 </script>
 
