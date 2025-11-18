@@ -30,6 +30,7 @@ const router = createRouter({
         {
           path: 'devices',
           component: () => import('@/views/DeviceManagement.vue'),
+          meta: { transition: 'login' },
         },
         {
           path: 'users',

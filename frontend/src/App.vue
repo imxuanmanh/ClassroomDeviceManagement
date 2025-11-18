@@ -26,7 +26,7 @@ body {
 /* ===== TRANSITION LOGIN → MAIN ===== */
 /* Login fade out + scale down khi rời đi */
 .login-leave-active {
-  transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .login-leave-to {
@@ -36,7 +36,7 @@ body {
 
 /* Trang chính fade in + slide từ phải */
 .login-enter-active {
-  transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-enter-from {
@@ -48,7 +48,6 @@ body {
   opacity: 1;
   transform: translateX(0);
 }
-
 
 </style>
 

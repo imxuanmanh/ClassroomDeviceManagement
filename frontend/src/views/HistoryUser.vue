@@ -184,19 +184,18 @@ onMounted(() => fetchRequestsByStatus(activeTab.value))
 /* ======================================================
    ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI
 ====================================================== */
+
 async function deletePending(requestId) {
   if (!confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
 
   try {
-    const result = await borrowApi.deletePending(requestId)
-    if (result.ok) {
-      alert('🗑️ Đã xóa yêu cầu!')
-      fetchRequestsByStatus('Đang đợi')
-    } else {
-      alert('❌ Lỗi khi xóa yêu cầu!')
-    }
-  } catch {
-    alert('❌ Lỗi kết nối đến server')
+    await borrowApi.delete(requestId)
+
+    alert('🗑️ Đã xóa yêu cầu!')
+    pendingRequests.value = pendingRequests.value.filter((req) => req.requestId !== requestId)
+  } catch (error) {
+    console.error('❌ Lỗi:', error)
+    alert('❌ Không thể xoá yêu cầu!')
   }
 }
 
@@ -227,17 +226,27 @@ function formatDate(dateStr) {
 
 <style scoped>
 .requests-page {
-  background: #fff;
-  padding: 20px;
+  /* background: #fff; */ /* Bỏ nền trắng */
+  padding: 20px 12px; /* Đồng bộ padding */
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); */ /* Bỏ bóng sáng */
+  color: #eeeeee; /* ✅ Chữ chính */
+}
+
+/* Thêm style cho H1 */
+h1 {
+  color: #00adb5; /* ✅ Chữ nhấn */
+  text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 24px;
 }
 
 /* Tabs */
 .tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid rgba(0, 173, 181, 0.3); /* Viền nhấn */
   margin-bottom: 20px;
 }
 
@@ -249,45 +258,60 @@ function formatDate(dateStr) {
   cursor: pointer;
   border-radius: 8px 8px 0 0;
   transition: all 0.2s ease;
-  color: #444;
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ (cho tab không active) */
 }
 
 .tab-btn:hover {
-  background: #e7f3f5;
-  color: #000;
+  background: rgba(0, 173, 181, 0.1); /* Nền nhấn mờ */
+  color: #00adb5; /* ✅ Chữ nhấn */
 }
 
 .tab-btn.active {
-  background: #417c85;
-  color: white;
+  background: #00adb5; /* ✅ Nền nhấn */
+  color: #222831; /* Chữ tối để tương phản */
   font-weight: 600;
 }
 
 /* Nội dung tab */
 .tab-content {
-  background: #f9fafb;
+  background: #393e46; /* Nền phụ */
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 173, 181, 0.2); /* Viền nhấn mờ */
+}
+
+/* Chữ khi không có dữ liệu */
+.tab-content p {
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  text-align: center;
+  padding: 20px 0;
 }
 
 /* Bảng */
 .request-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: #393e46; /* Nền phụ */
 }
 
 .request-table th,
 .request-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(0, 173, 181, 0.15); /* Viền nhấn mờ */
   text-align: left;
 }
 
 .request-table th {
-  background: #417c85;
-  color: white;
+  background: #222831; /* Nền chính (tối nhất) */
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* Hover hàng */
+.request-table tbody tr:hover {
+  background: rgba(0, 173, 181, 0.05);
 }
 
 .actions {
@@ -295,6 +319,7 @@ function formatDate(dateStr) {
   gap: 8px;
 }
 
+/* Nút chung (Sử dụng lại từ file trước, dù ở đây chỉ có nút đỏ) */
 .accept-btn,
 .reject-btn,
 .return-btn {
@@ -308,26 +333,26 @@ function formatDate(dateStr) {
 }
 
 .accept-btn {
-  background: #16a34a;
+  background: #00adb5;
+  color: #222831;
 }
-
 .accept-btn:hover {
-  background: #15803d;
+  background: #eeeeee;
 }
 
+/* Giữ màu đỏ cho nút Xóa/Từ chối */
 .reject-btn {
   background: #ef4444;
 }
-
 .reject-btn:hover {
   background: #dc2626;
 }
 
 .return-btn {
-  background: #2563eb;
+  background: #00adb5;
+  color: #222831;
 }
-
 .return-btn:hover {
-  background: #1d4ed8;
+  background: #eeeeee;
 }
 </style>

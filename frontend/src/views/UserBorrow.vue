@@ -37,9 +37,16 @@
           </div>
 
           <!-- Thanh trượt chọn tiết -->
-          <!-- Thanh trượt chọn tiết (Multi Range Slider) -->
           <div class="field">
             <label>Chọn tiết sử dụng</label>
+
+            <!-- ✅ Hiển thị từng số tiết phía trên -->
+            <div class="period-numbers">
+              <span v-for="period in validPeriods" :key="period" class="period-num">
+                {{ period }}
+              </span>
+            </div>
+
             <div class="multi-range-slider">
               <input
                 type="range"
@@ -66,7 +73,7 @@
             </div>
           </div>
 
-          <div class="actions">
+          <div class="actions" style="justify-content: flex-end">
             <button class="cancel-btn" @click="closeBorrowForm">Hủy</button>
             <button class="submit-btn" @click="confirmBorrow">Xác nhận</button>
           </div>
@@ -131,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
 import { deviceApi, categoryApi, borrowApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
@@ -148,8 +155,8 @@ const error = ref('')
 const q = ref('')
 const items = ref([])
 
-// Danh sách tiết hợp lệ (bỏ tiết 5 và 15)
-const validPeriods = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+// ✅ Danh sách tiết theo yêu cầu: 1→4, 7→10, 11→14
+const validPeriods = [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14]
 
 // Index trong mảng validPeriods
 const startPeriodIndex = ref(0) // tương ứng tiết 1
@@ -173,69 +180,12 @@ const showBorrowForm = ref(false)
 const selectedModel = ref(null)
 const usageLocation = ref('')
 const usagePurpose = ref('')
+const rangeElement = ref(null)
 
-// async function fetchCategories() {
-//   loading.value = true
-//   try {
-//     categories.value = await categoryApi.getAll()
-//   } catch {
-//     error.value = 'Không thể tải danh sách loại thiết bị'
-//   } finally {
-//     loading.value = false
-//   }
-// }
-
-// async function fetchDevices() {
-//   loading.value = true
-//   try {
-//     const data = await deviceApi.getAll()
-//     items.value = Array.isArray(data) ? data : []
-//   } catch {
-//     error.value = 'Không thể tải danh sách thiết bị'
-//   } finally {
-//     loading.value = false
-//   }
-// }
-
-// Thay thế fetchCategories và fetchDevices bằng dữ liệu giả lập
-function fetchCategories() {
+async function fetchCategories() {
   loading.value = true
   try {
-    categories.value = [
-      { id: 1, name: 'Laptop' },
-      { id: 2, name: 'Máy chiếu' },
-    ]
-    // Gán luôn dữ liệu models cho mỗi category
-    modelsByCategory.value = {
-      1: [
-        {
-          modelId: 101,
-          modelName: 'Dell XPS 13',
-          specifications: 'i7, 16GB RAM, 512GB SSD',
-          storageLocation: 'A1',
-          totalQuantity: 5,
-          availableQuantity: 3,
-        },
-        {
-          modelId: 102,
-          modelName: 'MacBook Pro 14',
-          specifications: 'M1 Pro, 16GB RAM, 1TB SSD',
-          storageLocation: 'A2',
-          totalQuantity: 2,
-          availableQuantity: 2,
-        },
-      ],
-      2: [
-        {
-          modelId: 201,
-          modelName: 'Epson EB-X41',
-          specifications: '3000 lumens, XGA',
-          storageLocation: 'B1',
-          totalQuantity: 1,
-          availableQuantity: 1,
-        },
-      ],
-    }
+    categories.value = await categoryApi.getAll()
   } catch {
     error.value = 'Không thể tải danh sách loại thiết bị'
   } finally {
@@ -243,12 +193,18 @@ function fetchCategories() {
   }
 }
 
-function fetchDevices() {
-  // Không cần fetch thực, chỉ để items rỗng hoặc bạn có thể thêm vài device demo
-  items.value = []
+async function fetchDevices() {
+  loading.value = true
+  try {
+    const data = await deviceApi.getAll()
+    items.value = Array.isArray(data) ? data : []
+  } catch {
+    error.value = 'Không thể tải danh sách thiết bị'
+  } finally {
+    loading.value = false
+  }
 }
 
-// Khi nhấn 1 category
 async function openCategory(category) {
   selectedCategory.value = category
   if (!modelsByCategory.value[category.id]) {
@@ -264,25 +220,6 @@ function backToCategories() {
   selectedCategory.value = null
 }
 
-// Hàm tính vị trí % dựa vào index
-function getPeriodPosition(index) {
-  return (index / (validPeriods.length - 1)) * 100
-}
-
-// Sửa hàm fixPeriod để làm việc với index
-function fixPeriod(isStart) {
-  if (isStart) {
-    if (startPeriodIndex.value > endPeriodIndex.value) {
-      startPeriodIndex.value = endPeriodIndex.value
-    }
-  } else {
-    if (endPeriodIndex.value < startPeriodIndex.value) {
-      endPeriodIndex.value = startPeriodIndex.value
-    }
-  }
-}
-
-// CRUD
 function openCreate() {
   showForm.value = true
   editingIndex.value = null
@@ -326,6 +263,18 @@ function openBorrowForm(model) {
   startPeriodIndex.value = 0
   endPeriodIndex.value = 2
   showBorrowForm.value = true
+
+  // ✅ Cập nhật range ngay khi mở form
+  setTimeout(() => {
+    if (rangeElement.value) {
+      const min = 0
+      const max = validPeriods.length - 1
+      const leftPercent = ((startPeriodIndex.value - min) / (max - min)) * 100
+      const rightPercent = ((endPeriodIndex.value - min) / (max - min)) * 100
+      rangeElement.value.style.left = `${leftPercent}%`
+      rangeElement.value.style.right = `${100 - rightPercent}%`
+    }
+  }, 0)
 }
 
 function closeBorrowForm() {
@@ -335,17 +284,14 @@ function closeBorrowForm() {
 async function confirmBorrow() {
   if (!selectedModel.value) return
 
-  // Kiểm tra dữ liệu nhập
   if (!usageLocation.value.trim() || !usagePurpose.value.trim()) {
     alert('⚠️ Vui lòng nhập đầy đủ vị trí và mục đích sử dụng.')
     return
   }
 
-  // Lấy tiết thực tế từ validPeriods
   const startPeriodValue = validPeriods[startPeriodIndex.value]
   const endPeriodValue = validPeriods[endPeriodIndex.value]
 
-  // Chuẩn bị payload theo đúng format API
   const payload = {
     userId: auth.userId,
     modelId: selectedModel.value.modelId,
@@ -374,14 +320,26 @@ async function confirmBorrow() {
 onMounted(() => {
   fetchDevices()
   fetchCategories()
+
+  // ✅ Khởi tạo vị trí range ban đầu
+  if (rangeElement.value) {
+    const min = 0
+    const max = validPeriods.length - 1
+    const leftPercent = ((startPeriodIndex.value - min) / (max - min)) * 100
+    const rightPercent = ((endPeriodIndex.value - min) / (max - min)) * 100
+    rangeElement.value.style.left = `${leftPercent}%`
+    rangeElement.value.style.right = `${100 - rightPercent}%`
+  }
 })
 
-import { watch } from 'vue'
-
-const rangeElement = ref(null) // Tham chiếu .range
-
-// Cập nhật vị trí range khi startPeriodIndex thay đổi
+// ✅ Cập nhật vị trí range khi startPeriodIndex thay đổi + CHẶN vượt qua
 watch(startPeriodIndex, () => {
+  // CHẶN: Icon đầu không được vượt icon sau
+  if (startPeriodIndex.value > endPeriodIndex.value) {
+    startPeriodIndex.value = endPeriodIndex.value
+    return
+  }
+
   const min = 0
   const max = validPeriods.length - 1
   const leftPercent = ((startPeriodIndex.value - min) / (max - min)) * 100
@@ -390,8 +348,14 @@ watch(startPeriodIndex, () => {
   }
 })
 
-// Cập nhật khi endPeriodIndex thay đổi
+// ✅ Cập nhật khi endPeriodIndex thay đổi + CHẶN về trước
 watch(endPeriodIndex, () => {
+  // CHẶN: Icon sau không được về trước icon đầu
+  if (endPeriodIndex.value < startPeriodIndex.value) {
+    endPeriodIndex.value = startPeriodIndex.value
+    return
+  }
+
   const min = 0
   const max = validPeriods.length - 1
   const rightPercent = ((endPeriodIndex.value - min) / (max - min)) * 100
@@ -404,7 +368,7 @@ watch(endPeriodIndex, () => {
 <style scoped>
 .device {
   padding: 16px 12px;
-  color: #eeeeee; /* ✅ Chữ chính */
+  color: #eeeeee;
 }
 .page-header {
   display: flex;
@@ -414,14 +378,15 @@ watch(endPeriodIndex, () => {
 }
 .page-header h2 {
   margin: 0;
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
   text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
 }
 .actions {
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
+  margin-top: 16px;
 }
-/* Cập nhật ô tìm kiếm */
 .actions input {
   padding: 6px 10px;
   border: 1px solid rgba(0, 173, 181, 0.3);
@@ -436,9 +401,8 @@ watch(endPeriodIndex, () => {
   box-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
 }
 .actions input::placeholder {
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  color: rgba(238, 238, 238, 0.7);
 }
-/* Nút "Thêm" của Admin */
 .actions button {
   background: #00adb5;
   color: #222831;
@@ -454,14 +418,13 @@ watch(endPeriodIndex, () => {
 }
 
 .content {
-  background: #393e46; /* Nền phụ */
+  background: #393e46;
   border-radius: 12px;
   box-shadow: 0 0 20px rgba(0, 173, 181, 0.15);
   border: 1px solid rgba(0, 173, 181, 0.2);
   padding: 16px;
 }
 
-/* Category cards */
 .categories {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -469,7 +432,7 @@ watch(endPeriodIndex, () => {
   margin-top: 16px;
 }
 .category-card {
-  background: #222831; /* Nền chính */
+  background: #222831;
   border: 1px solid rgba(0, 173, 181, 0.2);
   border-radius: 12px;
   padding: 16px;
@@ -485,14 +448,13 @@ watch(endPeriodIndex, () => {
 }
 .category-card h3 {
   margin: 0;
-  color: #eeeeee; /* ✅ Chữ chính */
+  color: #eeeeee;
   transition: color 0.2s;
 }
 .category-card:hover h3 {
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
 }
 
-/* Models table */
 .models-view {
   animation: fadeIn 0.3s ease;
 }
@@ -505,7 +467,7 @@ watch(endPeriodIndex, () => {
 .back-btn {
   background: none;
   border: none;
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
   font-weight: 600;
   cursor: pointer;
   font-size: 15px;
@@ -517,7 +479,7 @@ watch(endPeriodIndex, () => {
   background: rgba(0, 173, 181, 0.1);
 }
 .models-header h3 {
-  color: #eeeeee; /* ✅ Chữ chính */
+  color: #eeeeee;
 }
 .models-table {
   overflow-x: auto;
@@ -535,12 +497,12 @@ watch(endPeriodIndex, () => {
 }
 .models-table th {
   background: #222831;
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
   font-weight: 600;
 }
 .borrow-btn {
-  background-color: #00adb5; /* ✅ Chữ nhấn */
-  color: #222831; /* Chữ tối để tương phản */
+  background-color: #00adb5;
+  color: #222831;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
@@ -552,18 +514,17 @@ watch(endPeriodIndex, () => {
   background-color: #eeeeee;
 }
 
-/* Borrow form modal */
 .borrow-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7); /* Tối hơn */
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 .borrow-form {
-  background: #393e46; /* Nền phụ */
+  background: #393e46;
   padding: 20px;
   border-radius: 10px;
   width: 400px;
@@ -571,11 +532,11 @@ watch(endPeriodIndex, () => {
   box-shadow: 0 0 30px rgba(0, 173, 181, 0.25);
   border: 1px solid rgba(0, 173, 181, 0.3);
   animation: fadeIn 0.3s ease;
-  color: #eeeeee; /* ✅ Chữ chính */
+  color: #eeeeee;
 }
 .borrow-form h3 {
   margin-top: 0;
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
 }
 .field {
   display: flex;
@@ -584,7 +545,7 @@ watch(endPeriodIndex, () => {
 }
 .field label {
   font-size: 14px;
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  color: rgba(238, 238, 238, 0.7);
   margin-bottom: 4px;
   font-weight: 500;
 }
@@ -599,12 +560,6 @@ watch(endPeriodIndex, () => {
   outline: none;
   border-color: #00adb5;
   box-shadow: 0 0 10px rgba(0, 173, 181, 0.3);
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
 }
 .cancel-btn {
   background: rgba(238, 238, 238, 0.1);
@@ -634,7 +589,7 @@ watch(endPeriodIndex, () => {
 .empty,
 td[colspan='7'] {
   text-align: center;
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  color: rgba(238, 238, 238, 0.7);
   padding: 24px 0;
 }
 
@@ -649,12 +604,28 @@ td[colspan='7'] {
   }
 }
 
-/* Period Slider */
 /* ====================== Thanh trượt chọn tiết ====================== */
+/* ✅ Hiển thị từng số tiết phía trên */
+.period-numbers {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  margin-bottom: 4px;
+}
+
+.period-num {
+  font-size: 12px;
+  color: #00adb5;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
 .multi-range-slider {
   position: relative;
   width: 100%;
   height: 2rem;
+  margin-top: 10px;
 }
 
 input[type='range'] {
@@ -666,17 +637,35 @@ input[type='range'] {
   position: absolute;
   z-index: 10;
   height: 100%;
-  pointer-events: all;
+  pointer-events: none;
+}
+
+input[type='range']:focus {
+  outline: none;
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
+  pointer-events: auto;
   cursor: pointer;
   border: 0 none;
-  width: 1.8rem;
-  height: 1.8rem;
-  background: #efedfc;
-  border: 0.35rem solid #8e7eeb;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: #eeeeee;
+  border: 0.3rem solid #00adb5;
+  border-radius: 50%;
+  margin-top: -0.35rem;
+}
+
+input[type='range']::-moz-range-thumb {
+  -moz-appearance: none;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 0 none;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: #eeeeee;
+  border: 0.3rem solid #00adb5;
   border-radius: 50%;
 }
 
@@ -696,7 +685,7 @@ input[type='range']::-webkit-slider-thumb {
   bottom: 0;
   top: 0;
   border-radius: 5rem;
-  background-color: #eeeeee;
+  background-color: #222831;
 }
 
 .slider > .range {
@@ -705,16 +694,16 @@ input[type='range']::-webkit-slider-thumb {
   top: 0;
   bottom: 0;
   border-radius: 5rem;
-  background: #cec8f6;
+  background: #00adb5;
 }
 
 .price__wrapper {
   width: 100%;
-  color: #efedfc;
+  color: #eeeeee;
   display: flex;
   justify-content: space-between;
-  font-size: 1.6rem;
-  margin-top: 1rem;
-  font-weight: bold;
+  font-size: 13px;
+  margin-top: 10px;
+  font-weight: 500;
 }
-</style>
+</style>  

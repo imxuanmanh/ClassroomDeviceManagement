@@ -378,10 +378,11 @@ function returnDevice(index) {
 
 <style scoped>
 .requests-page {
-  background: #fff;
-  padding: 20px;
+  /* background: #fff; */ /* Bỏ nền trắng */
+  padding: 20px 12px; /* Đồng bộ padding */
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); */ /* Bỏ bóng sáng */
+  color: #eeeeee; /* ✅ Chữ chính */
 }
 
 /* Tabs */
@@ -400,45 +401,47 @@ function returnDevice(index) {
   cursor: pointer;
   border-radius: 8px 8px 0 0;
   transition: all 0.2s ease;
-  color: #444;
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ (cho tab không active) */
 }
 
 .tab-btn:hover {
-  background: #e7f3f5;
-  color: #000;
+  background: rgba(0, 173, 181, 0.1); /* Nền nhấn mờ */
+  color: #00adb5; /* ✅ Chữ nhấn */
 }
 
-.tab-btn.active {
-  background: #417c85;
-  color: white;
-  font-weight: 600;
-}
-
-/* Nội dung tab */
 .tab-content {
-  background: #f9fafb;
+  background: #393e46; /* Nền phụ */
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 173, 181, 0.2); /* Viền nhấn mờ */
+}
+
+/* Chữ khi không có dữ liệu */
+.tab-content p {
+  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  text-align: center;
+  padding: 20px 0;
 }
 
 /* Bảng */
 .request-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: #393e46; /* Nền phụ */
 }
-
 .request-table th,
 .request-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(0, 173, 181, 0.15); /* Viền nhấn mờ */
   text-align: left;
 }
 
 .request-table th {
-  background: #417c85;
-  color: white;
+  background: #222831; /* Nền chính (tối nhất) */
+  color: #00adb5; /* ✅ Chữ nhấn */
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 
 .actions {
@@ -446,6 +449,7 @@ function returnDevice(index) {
   gap: 8px;
 }
 
+/* Nút chung */
 .accept-btn,
 .reject-btn,
 .return-btn {
@@ -458,27 +462,35 @@ function returnDevice(index) {
   transition: background 0.2s ease;
 }
 
+/* Nút Chấp nhận */
 .accept-btn {
-  background: #16a34a;
+  background: #00adb5; /* ✅ Nền nhấn */
+  color: #222831; /* Chữ tối */
+  font-weight: 600;
 }
 
 .accept-btn:hover {
-  background: #15803d;
+  background: #eeeeee; /* Hover sáng */
 }
 
+/* Nút Từ chối (Giữ màu đỏ vì mang tính ngữ nghĩa) */
 .reject-btn {
   background: #ef4444;
+  color: #ffffff;
 }
 
 .reject-btn:hover {
   background: #dc2626;
 }
 
+/* Nút Trả lại (Dùng style giống Chấp nhận) */
 .return-btn {
-  background: #2563eb;
+  background: #00adb5; /* ✅ Nền nhấn */
+  color: #222831; /* Chữ tối */
+  font-weight: 600;
 }
 
 .return-btn:hover {
-  background: #1d4ed8;
+  background: #eeeeee; /* Hover sáng */
 }
 </style>

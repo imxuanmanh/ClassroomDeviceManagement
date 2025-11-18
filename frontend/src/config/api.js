@@ -3,7 +3,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://172.16.1.28:5129/api',
+  BASE_URL: 'http://10.136.73.146:5129/api',
 
   ENDPOINTS: {
     DEVICES: '/device',
@@ -193,7 +193,6 @@ export const borrowApi = {
       }
     }
   },
-
   /**
    * ➕ Tạo yêu cầu mượn thiết bị mới
    */
@@ -209,6 +208,12 @@ export const borrowApi = {
   return: (id) =>
     apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${id}/return`, {
       method: 'POST',
+    }),
+
+  /** ❌ Xóa yêu cầu */
+  delete: (requestId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${requestId}`, {
+      method: 'DELETE',
     }),
 }
 
