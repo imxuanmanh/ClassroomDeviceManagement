@@ -115,7 +115,7 @@ namespace ClassroomDeviceManagement.Controllers
         }
 
         /// <summary>
-        /// Thu hồi một request
+        /// Hoàn thành một request (Thu hồi thiết bị)
         /// </summary>
         [HttpPatch("{requestId}/return")]
         public async Task<IActionResult> ReturnBorrowRequest(int requestId)
@@ -129,5 +129,20 @@ namespace ClassroomDeviceManagement.Controllers
 
             return BadRequest(new { message = "Failed to return the request." });
         }
+
+        /// <summary>
+        /// Xóa một request (Đang chờ)
+        /// </summary>
+        [HttpDelete("{requestId}")]
+        public async Task<IActionResult> DeleteBorrowRequest(int requestId)
+        {
+            bool success = await _borrowRequestService.DeleteBorrowRequestAsync(requestId);
+
+            if (success)
+                return Ok(new { message = "Request deleted successfully." });
+
+            return NotFound(new { message = "Request not found." });
+        }
+
     }
 }

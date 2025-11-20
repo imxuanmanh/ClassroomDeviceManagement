@@ -8,6 +8,8 @@ namespace ClassroomDeviceManagement.Models
         public int UserId { get; set; }
         public int InstanceId { get; set; }
         public DateTime RequestDate { get; set; } = DateTime.Now;
+        public byte StartPeriod { get; set; }
+        public byte EndPeriod { get; set; }
         public DateTime? ApprovedDate { get; set; }
         public DateTime? ReturnDate { get; set; }
         public string UsageLocation { get; set; } = string.Empty;

@@ -64,6 +64,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
 
             return models;
         }
+        
         public async Task<DeviceModelDto?> GetByIdAsync(int id)
         {
             DeviceModelDto device = new DeviceModelDto();

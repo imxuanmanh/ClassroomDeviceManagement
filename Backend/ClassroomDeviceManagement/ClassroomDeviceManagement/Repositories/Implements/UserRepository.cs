@@ -1,8 +1,6 @@
 ﻿using ClassroomDeviceManagement.Managers;
 using ClassroomDeviceManagement.Models;
 using ClassroomDeviceManagement.Dto;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Data.SqlClient;
 using ClassroomDeviceManagement.Helper;
 using ClassroomDeviceManagement.Repositories.Interfaces;
@@ -50,9 +48,6 @@ namespace ClassroomDeviceManagement.Repositories.Implements
             user.Password = null;
             return user;
         }
-
-
-
 
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
@@ -138,5 +133,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                 throw;
             }
         }
+    
+         
     }
 }

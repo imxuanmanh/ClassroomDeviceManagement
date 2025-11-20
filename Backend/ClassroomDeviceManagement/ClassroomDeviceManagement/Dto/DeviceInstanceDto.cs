@@ -2,13 +2,6 @@
 
 namespace ClassroomDeviceManagement.Dto
 {
-    public enum InstanceStatus
-    {
-        Available = 0,
-        Borrowed,
-        Broken,
-        Maintenance
-    }
     public class DeviceInstanceDto
     {
         public int InstanceId { get; set; }

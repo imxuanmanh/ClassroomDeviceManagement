@@ -6,6 +6,7 @@ using ClassroomDeviceManagement.Services.Implements;
 using ClassroomDeviceManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,7 +64,6 @@ builder.Services.AddCors(option =>          // Thêm dịch vụ CORS vào conta
 });
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -85,6 +85,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IBorrowRequestRepository, BorrowRequestRepository>();
 
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+
 // Đăng ký Services
 builder.Services.AddScoped<IDeviceCategoryService, DeviceCategoryService>();
 builder.Services.AddScoped<IDeviceModelService, DeviceModelService>();
@@ -93,21 +95,25 @@ builder.Services.AddScoped<IDeviceInstanceService,  DeviceInstanceService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IBorrowRequestService,  BorrowRequestService>();
-
+builder.Services.AddScoped<IReportService, ReportService>();
 // Đăng ký Controllers
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
 
-    app.UseDeveloperExceptionPage();
-}
+//     app.UseDeveloperExceptionPage();
+// }
 
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseDeveloperExceptionPage();
 
 // app.UseHttpsRedirection();
 
@@ -117,6 +123,20 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
+app.UseStaticFiles();
+
 app.MapControllers();
+
+var url = "http://localhost:5129/swagger/index.html";
+
+_ = Task.Run(() =>
+{
+    Thread.Sleep(1000);
+    Process.Start(new ProcessStartInfo
+    {
+        FileName = url,
+        UseShellExecute = true
+    });
+});
 
 app.Run();

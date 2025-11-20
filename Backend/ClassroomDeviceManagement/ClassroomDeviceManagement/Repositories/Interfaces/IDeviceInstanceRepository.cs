@@ -1,4 +1,5 @@
 ﻿using ClassroomDeviceManagement.Dto;
+using ClassroomDeviceManagement.Enums;
 using ClassroomDeviceManagement.Models;
 
 namespace ClassroomDeviceManagement.Repositories.Interfaces
