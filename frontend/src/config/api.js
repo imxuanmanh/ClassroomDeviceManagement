@@ -3,7 +3,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://10.136.73.146:5129/api',
+  BASE_URL: 'http://192.168.103.78:5129/api',
 
   ENDPOINTS: {
     DEVICES: '/device',
@@ -73,6 +73,8 @@ export const modelApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  // ✅ SỬA LẠI: Truyền đúng cách vào apiCall
+  getInstances: (modelId) => apiCall(`/models/${modelId}/instances`),
 }
 
 export const deviceApi = {
@@ -114,7 +116,6 @@ export const userApi = {
       method: 'DELETE',
     }),
 
-  // ✅ Đổi tên phương thức
   getPendingRequests: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/pending`),
 
@@ -123,6 +124,63 @@ export const userApi = {
 
   getRejectedRequests: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/rejected`),
+}
+
+/**
+ * ✨ API QUẢN LÝ INSTANCES (THIẾT BỊ CỤ THỂ) - MỚI
+ */
+export const instanceApi = {
+  /**
+   * Tạo instance mới
+   * @param {Object} data - Dữ liệu instance
+   * @param {number} data.modelId - ID của model
+   * @param {string} data.instanceCode - Mã thiết bị (VD: CAM-001)
+   * @param {string} data.currentLocation - Vị trí hiện tại
+   * @param {number} data.statusId - ID trạng thái (1: Khả dụng, 2: Đang mượn, 3: Bảo trì, 4: Hỏng)
+   * @param {string} data.notes - Ghi chú (optional)
+   */
+  create: (data) =>
+    apiCall('/instances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Lấy thông tin instance theo ID
+   */
+  getById: (instanceId) => apiCall(`/instances/${instanceId}`),
+
+  /**
+   * Cập nhật thông tin instance
+   */
+  update: (instanceId, data) =>
+    apiCall(`/instances/${instanceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Xóa instance
+   */
+  delete: (instanceId) =>
+    apiCall(`/instances/${instanceId}`, {
+      method: 'DELETE',
+    }),
+
+  /**
+   * Cập nhật trạng thái instance
+   */
+  updateStatus: (instanceId, statusId) =>
+    apiCall(`/instances/${instanceId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ statusId }),
+    }),
+
+  /**
+   * Lấy danh sách instances theo trạng thái
+   * @param {number} statusId - 1: Khả dụng, 2: Đang mượn, 3: Bảo trì, 4: Hỏng
+   */
+  getByStatus: (statusId) => apiCall(`/instances/status/${statusId}`),
 }
 
 /**
@@ -233,6 +291,35 @@ export const reportApi = {
   getStats: () => apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/stats`),
   getBorrowsByPeriod: (startDate, endDate) =>
     apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/borrows?start=${startDate}&end=${endDate}`),
+
+  /**
+   * ⚠️ Tạo báo cáo thiết bị hỏng
+   * @param {FormData} formData - FormData chứa UserId, InstanceId, Description, và image
+   */
+  createBrokenReport: async (formData) => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORTS}`, {
+        method: 'POST',
+        body: formData,
+        // Không set Content-Type header khi dùng FormData
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        message: data.message || data || 'Không có phản hồi từ server.',
+      }
+    } catch (error) {
+      console.error('❌ Lỗi khi gọi API createBrokenReport:', error)
+      return {
+        ok: false,
+        status: 0,
+        message: 'Không thể kết nối đến máy chủ.',
+      }
+    }
+  },
 }
 
 /**

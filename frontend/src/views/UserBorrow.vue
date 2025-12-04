@@ -123,7 +123,13 @@
                 <td>{{ m.totalQuantity }}</td>
                 <td>{{ m.availableQuantity }}</td>
                 <td>
-                  <button class="borrow-btn" @click="openBorrowForm(m)">Mượn</button>
+                  <button
+                    class="borrow-btn"
+                    :disabled="m.availableQuantity === 0"
+                    @click="openBorrowForm(m)"
+                  >
+                    Mượn
+                  </button>
                 </td>
               </tr>
               <tr v-if="(modelsByCategory[selectedCategory.id] || []).length === 0">
@@ -507,11 +513,17 @@ watch(endPeriodIndex, () => {
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   font-weight: 600;
 }
-.borrow-btn:hover {
+.borrow-btn:hover:not(:disabled) {
   background-color: #eeeeee;
+}
+.borrow-btn:disabled {
+  background-color: rgba(0, 173, 181, 0.3);
+  color: rgba(34, 40, 49, 0.5);
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .borrow-overlay {
@@ -706,4 +718,4 @@ input[type='range']::-moz-range-thumb {
   margin-top: 10px;
   font-weight: 500;
 }
-</style>  
+</style>

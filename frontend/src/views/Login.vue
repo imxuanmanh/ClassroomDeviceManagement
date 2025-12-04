@@ -24,7 +24,20 @@
         </form>
       </div>
       <div class="info-text login">
-        <h2>Hệ thống Quản lý Thiết bị</h2>
+        <h2>Quản lý Thiết bị phòng học</h2>
+
+        <!-- Thêm 3 icon cử động -->
+        <div class="feature-icons">
+          <div class="feature-icon" style="animation-delay: 0s">
+            <i class="bx bx-chalkboard"></i>
+          </div>
+          <div class="feature-icon" style="animation-delay: 0.3s">
+            <i class="bx bx-book-reader"></i>
+          </div>
+          <div class="feature-icon" style="animation-delay: 0.6s">
+            <i class="bx bx-devices"></i>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -72,6 +85,8 @@ async function onSubmit() {
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
+
 * {
   margin: 0;
   padding: 0;
@@ -313,6 +328,48 @@ async function onSubmit() {
 @keyframes spin {
   100% {
     transform: rotate(360deg);
+  }
+}
+
+/* ===== THÊM MỚI: Feature Icons (3 icon cử động) ===== */
+.feature-icons {
+  display: flex;
+  gap: 20px;
+  margin-top: 40px;
+  justify-content: flex-end;
+}
+
+.feature-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 2px solid #0ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #0ef;
+  background: rgba(0, 238, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: float 3s ease-in-out infinite;
+}
+
+.feature-icon:hover {
+  transform: translateY(-8px) scale(1.15);
+  box-shadow: 0 8px 25px rgba(0, 238, 255, 0.6);
+  background: rgba(0, 238, 255, 0.2);
+  border-width: 3px;
+}
+
+/* Animation bay lên xuống */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 </style>

@@ -26,20 +26,17 @@ const router = createRouter({
         {
           path: 'dashboard',
           component: () => import('@/views/Dashboard.vue'),
+          meta: { transition: 'login' },
         },
         {
           path: 'devices',
           component: () => import('@/views/DeviceManagement.vue'),
-          meta: { transition: 'login' },
         },
         {
           path: 'users',
           component: () => import('@/views/UserManagement.vue'),
         },
-        {
-          path: 'reports',
-          component: () => import('@/views/Reports.vue'),
-        },
+       
         {
           path: 'history',
           component: () => import('@/views/History.vue'),
@@ -59,6 +56,10 @@ const router = createRouter({
         {
           path: 'requests',
           component: () => import('@/views/Requests.vue'),
+        },
+        {
+          path: '/reports',
+          component: () => import('@/views/ReportManagement.vue'),
         },
       ],
     },

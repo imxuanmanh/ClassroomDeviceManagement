@@ -65,7 +65,7 @@ const menu = computed(() => {
         title: 'THEO DÕI',
         items: [
           { to: '/history', icon: 'history', label: 'Lịch sử' },
-          { to: '/reports', icon: 'bar_chart', label: 'Thống kê' },
+          { to: '/reports', icon: 'bar_chart', label: 'Báo cáo hư hỏng' },
           { to: '/requests', icon: 'assignment', label: 'Yêu cầu' },
         ],
       },

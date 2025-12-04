@@ -30,7 +30,6 @@
           </thead>
           <tbody>
             <tr v-for="(req, index) in pendingRequests" :key="index">
-              <!-- ❌ Không hiển thị requestId -->
               <td>{{ req.deviceName }}</td>
               <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
               <td>{{ req.location }}</td>
@@ -46,7 +45,6 @@
       </div>
 
       <!-- TAB: Đã chấp nhận -->
-      <!-- TAB: Đã chấp nhận -->
       <div v-else-if="activeTab === 'Đã chấp nhận'">
         <table class="request-table" v-if="acceptedRequests.length">
           <thead>
@@ -54,6 +52,7 @@
               <th>Tên thiết bị</th>
               <th>Mã thiết bị</th>
               <th>Vị trí lưu trữ</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -61,13 +60,23 @@
               <td>{{ req.deviceName }}</td>
               <td>{{ req.deviceCode }}</td>
               <td>{{ req.storageLocation }}</td>
+              <td>
+                <div class="actions">
+                  <button
+                    class="broken-btn"
+                    @click="openReportModal(req)"
+                    title="Báo thiết bị hỏng"
+                  >
+                    ⚠️ Báo hỏng
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
         <p v-else>Chưa có yêu cầu nào được chấp nhận.</p>
       </div>
 
-      <!-- TAB: Bị từ chối -->
       <!-- TAB: Bị từ chối -->
       <div v-else-if="activeTab === 'Bị từ chối'">
         <table class="request-table" v-if="rejectedRequests.length">
@@ -93,12 +102,21 @@
         <p v-else>Không có yêu cầu nào bị từ chối.</p>
       </div>
     </div>
+
+    <!-- Modal báo hỏng -->
+    <ReportBrokenModal
+      :is-open="showReportModal"
+      :device-data="selectedDevice"
+      @close="closeReportModal"
+      @submit="handleReportSubmit"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { userApi, borrowApi } from '@/config/api.js'
+import { userApi, borrowApi, reportApi } from '@/config/api.js'
+import ReportBrokenModal from '@/components/Device/ReportBrokenModal.vue'
 
 // Tabs
 const tabs = ['Đang đợi', 'Đã chấp nhận', 'Bị từ chối']
@@ -111,6 +129,14 @@ const rejectedRequests = ref([])
 
 const loading = ref(false)
 const error = ref(null)
+
+// Modal state
+const showReportModal = ref(false)
+const selectedDevice = ref({
+  requestId: null,
+  deviceName: '',
+  deviceCode: '',
+})
 
 /* ======================================================
    📌 HÀM LẤY DỮ LIỆU THEO TRẠNG THÁI
@@ -184,7 +210,6 @@ onMounted(() => fetchRequestsByStatus(activeTab.value))
 /* ======================================================
    ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI
 ====================================================== */
-
 async function deletePending(requestId) {
   if (!confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
 
@@ -200,14 +225,51 @@ async function deletePending(requestId) {
 }
 
 /* ======================================================
-   🪄 CÁC ACTION CŨ GIỮ NGUYÊN
+   🪄 XỬ LÝ MODAL BÁO HỎNG
 ====================================================== */
-async function returnDevice(index) {
-  const req = acceptedRequests.value[index]
-  const result = await borrowApi.return(req.requestId)
-  if (result.ok) {
-    alert('↩️ Đã trả!')
-    fetchRequestsByStatus(activeTab.value)
+function openReportModal(device) {
+  selectedDevice.value = {
+    requestId: device.requestId,
+    deviceName: device.deviceName,
+    deviceCode: device.deviceCode,
+  }
+  showReportModal.value = true
+}
+
+function closeReportModal() {
+  showReportModal.value = false
+}
+
+async function handleReportSubmit(data) {
+  console.log('📤 Gửi báo cáo:', data)
+
+  try {
+    // Lấy userId từ localStorage
+    const userId = localStorage.getItem('userId')
+    if (!userId) {
+      alert('❌ Không tìm thấy thông tin người dùng!')
+      return
+    }
+
+    // Tạo FormData để gửi cả text và file
+    const formData = new FormData()
+    formData.append('UserId', userId)
+    formData.append('InstanceId', data.requestId) // requestId chính là instanceId
+    formData.append('Description', data.description)
+    formData.append('image', data.image) // Tên field phải là "image" theo API
+
+    // Gọi API thông qua reportApi
+    const result = await reportApi.createBrokenReport(formData)
+
+    if (result.ok) {
+      alert('✅ ' + result.message)
+      fetchRequestsByStatus(activeTab.value)
+    } else {
+      alert('❌ ' + result.message)
+    }
+  } catch (error) {
+    console.error('❌ Lỗi:', error)
+    alert('❌ Không thể gửi báo cáo thiết bị hỏng! Vui lòng kiểm tra kết nối.')
   }
 }
 
@@ -226,16 +288,14 @@ function formatDate(dateStr) {
 
 <style scoped>
 .requests-page {
-  /* background: #fff; */ /* Bỏ nền trắng */
-  padding: 20px 12px; /* Đồng bộ padding */
+  padding: 20px 12px;
   border-radius: 12px;
-  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); */ /* Bỏ bóng sáng */
-  color: #eeeeee; /* ✅ Chữ chính */
+  color: #eeeeee;
 }
 
 /* Thêm style cho H1 */
 h1 {
-  color: #00adb5; /* ✅ Chữ nhấn */
+  color: #00adb5;
   text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
   margin-top: 0;
   margin-bottom: 20px;
@@ -246,7 +306,7 @@ h1 {
 .tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 2px solid rgba(0, 173, 181, 0.3); /* Viền nhấn */
+  border-bottom: 2px solid rgba(0, 173, 181, 0.3);
   margin-bottom: 20px;
 }
 
@@ -258,31 +318,31 @@ h1 {
   cursor: pointer;
   border-radius: 8px 8px 0 0;
   transition: all 0.2s ease;
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ (cho tab không active) */
+  color: rgba(238, 238, 238, 0.7);
 }
 
 .tab-btn:hover {
-  background: rgba(0, 173, 181, 0.1); /* Nền nhấn mờ */
-  color: #00adb5; /* ✅ Chữ nhấn */
+  background: rgba(0, 173, 181, 0.1);
+  color: #00adb5;
 }
 
 .tab-btn.active {
-  background: #00adb5; /* ✅ Nền nhấn */
-  color: #222831; /* Chữ tối để tương phản */
+  background: #00adb5;
+  color: #222831;
   font-weight: 600;
 }
 
 /* Nội dung tab */
 .tab-content {
-  background: #393e46; /* Nền phụ */
+  background: #393e46;
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 173, 181, 0.2); /* Viền nhấn mờ */
+  border: 1px solid rgba(0, 173, 181, 0.2);
 }
 
 /* Chữ khi không có dữ liệu */
 .tab-content p {
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  color: rgba(238, 238, 238, 0.7);
   text-align: center;
   padding: 20px 0;
 }
@@ -291,22 +351,34 @@ h1 {
 .request-table {
   width: 100%;
   border-collapse: collapse;
-  background: #393e46; /* Nền phụ */
+  background: #393e46;
 }
 
 .request-table th,
 .request-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(0, 173, 181, 0.15); /* Viền nhấn mờ */
-  text-align: left;
+  border-bottom: 1px solid rgba(0, 173, 181, 0.15);
 }
 
 .request-table th {
-  background: #222831; /* Nền chính (tối nhất) */
-  color: #00adb5; /* ✅ Chữ nhấn */
+  background: #222831;
+  color: #00adb5;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 12px;
+  text-align: center;
+}
+
+.request-table th:first-child {
+  text-align: left;
+}
+
+.request-table td {
+  text-align: center;
+}
+
+.request-table td:first-child {
+  text-align: left;
 }
 
 /* Hover hàng */
@@ -316,20 +388,26 @@ h1 {
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Nút chung (Sử dụng lại từ file trước, dù ở đây chỉ có nút đỏ) */
+/* ✨ NÚT MỚI - ĐÃ CẬP NHẬT CSS */
 .accept-btn,
 .reject-btn,
-.return-btn {
+.return-btn,
+.broken-btn {
   border: none;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  color: white;
-  transition: background 0.2s ease;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-width: 120px;
+  text-align: center;
 }
 
 .accept-btn {
@@ -338,21 +416,42 @@ h1 {
 }
 .accept-btn:hover {
   background: #eeeeee;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 173, 181, 0.3);
 }
 
-/* Giữ màu đỏ cho nút Xóa/Từ chối */
+/* Nút Xóa/Từ chối */
 .reject-btn {
   background: #ef4444;
+  color: white;
 }
 .reject-btn:hover {
   background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
+/* Nút Trả lại - với gradient xanh cyan đẹp */
 .return-btn {
-  background: #00adb5;
+  background: linear-gradient(135deg, #00adb5 0%, #009fa7 100%);
   color: #222831;
+  font-weight: 600;
 }
 .return-btn:hover {
-  background: #eeeeee;
+  background: linear-gradient(135deg, #009fa7 0%, #008a91 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 173, 181, 0.4);
+}
+
+/* Nút Báo hỏng - với gradient cam nổi bật */
+.broken-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #222831;
+  font-weight: 600;
+}
+.broken-btn:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
 }
 </style>
