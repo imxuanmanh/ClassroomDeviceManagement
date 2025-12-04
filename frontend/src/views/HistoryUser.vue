@@ -2,7 +2,6 @@
   <div class="requests-page">
     <h1>📩 Lịch sử yêu cầu mượn thiết bị</h1>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button
         v-for="tab in tabs"
@@ -14,9 +13,7 @@
       </button>
     </div>
 
-    <!-- Nội dung tab -->
     <div class="tab-content">
-      <!-- TAB: Đang đợi -->
       <div v-if="activeTab === 'Đang đợi'">
         <table class="request-table" v-if="pendingRequests.length">
           <thead>
@@ -44,7 +41,6 @@
         <p v-else>Không có yêu cầu nào đang đợi.</p>
       </div>
 
-      <!-- TAB: Đã chấp nhận -->
       <div v-else-if="activeTab === 'Đã chấp nhận'">
         <table class="request-table" v-if="acceptedRequests.length">
           <thead>
@@ -77,7 +73,6 @@
         <p v-else>Chưa có yêu cầu nào được chấp nhận.</p>
       </div>
 
-      <!-- TAB: Bị từ chối -->
       <div v-else-if="activeTab === 'Bị từ chối'">
         <table class="request-table" v-if="rejectedRequests.length">
           <thead>
@@ -103,7 +98,6 @@
       </div>
     </div>
 
-    <!-- Modal báo hỏng -->
     <ReportBrokenModal
       :is-open="showReportModal"
       :device-data="selectedDevice"
@@ -117,6 +111,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { userApi, borrowApi, reportApi } from '@/config/api.js'
 import ReportBrokenModal from '@/components/Device/ReportBrokenModal.vue'
+// 👇 IMPORT TOAST
+import { toast } from '@/utils/toast.js'
 
 // Tabs
 const tabs = ['Đang đợi', 'Đã chấp nhận', 'Bị từ chối']
@@ -128,7 +124,6 @@ const acceptedRequests = ref([])
 const rejectedRequests = ref([])
 
 const loading = ref(false)
-const error = ref(null)
 
 // Modal state
 const showReportModal = ref(false)
@@ -142,9 +137,7 @@ const selectedDevice = ref({
    📌 HÀM LẤY DỮ LIỆU THEO TRẠNG THÁI
 ====================================================== */
 async function fetchRequestsByStatus(status) {
-  console.log('▶️ Fetch tab:', status)
   loading.value = true
-  error.value = null
 
   try {
     const userId = localStorage.getItem('userId')
@@ -152,7 +145,6 @@ async function fetchRequestsByStatus(status) {
     // ---- TAB Đang đợi ----
     if (status === 'Đang đợi') {
       const data = await userApi.getPendingRequests(userId)
-      console.log('📌 Pending API data:', data)
       pendingRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
@@ -167,7 +159,6 @@ async function fetchRequestsByStatus(status) {
     // ---- TAB Đã chấp nhận ----
     if (status === 'Đã chấp nhận') {
       const data = await userApi.getApprovedRequests(userId)
-      console.log('📌 Approved API data:', data)
       acceptedRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
@@ -180,7 +171,6 @@ async function fetchRequestsByStatus(status) {
     // ---- TAB Bị từ chối ----
     if (status === 'Bị từ chối') {
       const data = await userApi.getRejectedRequests(userId)
-      console.log('📌 Rejected API data:', data)
       rejectedRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
@@ -194,7 +184,8 @@ async function fetchRequestsByStatus(status) {
     }
   } catch (err) {
     console.error('❌ Lỗi:', err)
-    error.value = 'Không thể tải dữ liệu.'
+    // 🔥 Dùng toast báo lỗi
+    toast.error('Không thể tải dữ liệu lịch sử.')
   } finally {
     loading.value = false
   }
@@ -208,24 +199,34 @@ watch(activeTab, (tab) => fetchRequestsByStatus(tab))
 onMounted(() => fetchRequestsByStatus(activeTab.value))
 
 /* ======================================================
-   ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI
+   ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI (Đã sửa)
 ====================================================== */
 async function deletePending(requestId) {
-  if (!confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
+  // 🔥 Dùng toast.confirm thay cho confirm()
+  const confirmed = await toast.confirm(
+    'Xóa yêu cầu?',
+    'Bạn có chắc chắn muốn hủy yêu cầu mượn này?',
+    'Xóa ngay',
+  )
+
+  if (!confirmed) return
 
   try {
     await borrowApi.delete(requestId)
 
-    alert('🗑️ Đã xóa yêu cầu!')
+    // 🔥 Toast thành công
+    toast.success('Đã hủy yêu cầu thành công!')
+
+    // Cập nhật lại danh sách local
     pendingRequests.value = pendingRequests.value.filter((req) => req.requestId !== requestId)
   } catch (error) {
     console.error('❌ Lỗi:', error)
-    alert('❌ Không thể xoá yêu cầu!')
+    toast.error('Không thể xoá yêu cầu! Vui lòng thử lại.')
   }
 }
 
 /* ======================================================
-   🪄 XỬ LÝ MODAL BÁO HỎNG
+   🪄 XỬ LÝ MODAL BÁO HỎNG (Đã sửa)
 ====================================================== */
 function openReportModal(device) {
   selectedDevice.value = {
@@ -241,35 +242,33 @@ function closeReportModal() {
 }
 
 async function handleReportSubmit(data) {
-  console.log('📤 Gửi báo cáo:', data)
-
   try {
-    // Lấy userId từ localStorage
     const userId = localStorage.getItem('userId')
     if (!userId) {
-      alert('❌ Không tìm thấy thông tin người dùng!')
+      toast.error('Lỗi xác thực: Không tìm thấy thông tin người dùng!')
       return
     }
 
-    // Tạo FormData để gửi cả text và file
     const formData = new FormData()
     formData.append('UserId', userId)
-    formData.append('InstanceId', data.requestId) // requestId chính là instanceId
+    formData.append('InstanceId', data.requestId)
     formData.append('Description', data.description)
-    formData.append('image', data.image) // Tên field phải là "image" theo API
+    formData.append('image', data.image)
 
-    // Gọi API thông qua reportApi
     const result = await reportApi.createBrokenReport(formData)
 
     if (result.ok) {
-      alert('✅ ' + result.message)
+      // 🔥 Toast thành công
+      toast.success(result.message || 'Gửi báo cáo hỏng thành công!')
       fetchRequestsByStatus(activeTab.value)
+      closeReportModal() // Đóng modal nếu thành công (tùy chọn)
     } else {
-      alert('❌ ' + result.message)
+      // 🔥 Toast lỗi từ server
+      toast.error(result.message || 'Gửi báo cáo thất bại.')
     }
   } catch (error) {
     console.error('❌ Lỗi:', error)
-    alert('❌ Không thể gửi báo cáo thiết bị hỏng! Vui lòng kiểm tra kết nối.')
+    toast.error('Lỗi kết nối khi gửi báo cáo.')
   }
 }
 
@@ -293,7 +292,6 @@ function formatDate(dateStr) {
   color: #eeeeee;
 }
 
-/* Thêm style cho H1 */
 h1 {
   color: #00adb5;
   text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
@@ -340,7 +338,6 @@ h1 {
   border: 1px solid rgba(0, 173, 181, 0.2);
 }
 
-/* Chữ khi không có dữ liệu */
 .tab-content p {
   color: rgba(238, 238, 238, 0.7);
   text-align: center;
@@ -381,7 +378,6 @@ h1 {
   text-align: left;
 }
 
-/* Hover hàng */
 .request-table tbody tr:hover {
   background: rgba(0, 173, 181, 0.05);
 }
@@ -393,10 +389,8 @@ h1 {
   align-items: center;
 }
 
-/* ✨ NÚT MỚI - ĐÃ CẬP NHẬT CSS */
-.accept-btn,
+/* NÚT */
 .reject-btn,
-.return-btn,
 .broken-btn {
   border: none;
   padding: 8px 16px;
@@ -406,21 +400,11 @@ h1 {
   font-size: 14px;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  min-width: 120px;
+  min-width: 100px;
   text-align: center;
 }
 
-.accept-btn {
-  background: #00adb5;
-  color: #222831;
-}
-.accept-btn:hover {
-  background: #eeeeee;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 173, 181, 0.3);
-}
-
-/* Nút Xóa/Từ chối */
+/* Nút Xóa */
 .reject-btn {
   background: #ef4444;
   color: white;
@@ -431,19 +415,7 @@ h1 {
   box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
-/* Nút Trả lại - với gradient xanh cyan đẹp */
-.return-btn {
-  background: linear-gradient(135deg, #00adb5 0%, #009fa7 100%);
-  color: #222831;
-  font-weight: 600;
-}
-.return-btn:hover {
-  background: linear-gradient(135deg, #009fa7 0%, #008a91 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 173, 181, 0.4);
-}
-
-/* Nút Báo hỏng - với gradient cam nổi bật */
+/* Nút Báo hỏng */
 .broken-btn {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: #222831;

@@ -7,7 +7,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/user-borrow',
+      redirect: '/history-user',
     },
 
     // Login page - KHÔNG có Layout
@@ -36,7 +36,7 @@ const router = createRouter({
           path: 'users',
           component: () => import('@/views/UserManagement.vue'),
         },
-       
+
         {
           path: 'history',
           component: () => import('@/views/History.vue'),
@@ -66,37 +66,37 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
-  const auth = useAuthStore()
-  const isLoggedIn = auth.isAuthenticated
-  const roleId = Number(auth.roleId)
+// router.beforeEach((to, from, next) => {
+//   const auth = useAuthStore()
+//   const isLoggedIn = auth.isAuthenticated
+//   const roleId = Number(auth.roleId)
 
-  // Nếu chưa login mà vào trang cần auth
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    return next('/login')
-  }
+//   // Nếu chưa login mà vào trang cần auth
+//   if (to.meta.requiresAuth && !isLoggedIn) {
+//     return next('/login')
+//   }
 
-  // Nếu đã login mà vào trang login → điều hướng theo role
-  if (isLoggedIn && to.path === '/login') {
-    return roleId === 1 ? next('/dashboard') : next('/user-borrow')
-  }
+//   // Nếu đã login mà vào trang login → điều hướng theo role
+//   if (isLoggedIn && to.path === '/login') {
+//     return roleId === 1 ? next('/dashboard') : next('/user-borrow')
+//   }
 
-  // Nếu user 2-3 vào trang admin
-  if (
-    isLoggedIn &&
-    (roleId === 2 || roleId === 3) &&
-    ['/dashboard', '/devices', '/users', '/reports', '/history'].includes(to.path)
-  ) {
-    return next('/user-borrow')
-  }
+//   // Nếu user 2-3 vào trang admin
+//   if (
+//     isLoggedIn &&
+//     (roleId === 2 || roleId === 3) &&
+//     ['/dashboard', '/devices', '/users', '/reports', '/history'].includes(to.path)
+//   ) {
+//     return next('/user-borrow')
+//   }
 
-  // Nếu admin vào trang user
-  if (isLoggedIn && roleId === 1 && ['/user-borrow'].includes(to.path)) {
-    return next('/dashboard')
-  }
+//   // Nếu admin vào trang user
+//   if (isLoggedIn && roleId === 1 && ['/user-borrow'].includes(to.path)) {
+//     return next('/dashboard')
+//   }
 
-  next()
-})
+//   next()
+// })
 
 export default router
 

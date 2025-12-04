@@ -1,8 +1,9 @@
 <template>
   <div class="requests-page">
-    <h1>📩 Danh sách yêu cầu mượn thiết bị</h1>
+    <div class="page-header">
+      <h1>📩 Danh sách yêu cầu mượn thiết bị</h1>
+    </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button
         v-for="tab in tabs"
@@ -14,9 +15,7 @@
       </button>
     </div>
 
-    <!-- Nội dung tab -->
     <div class="tab-content">
-      <!-- TAB: Đang đợi -->
       <div v-if="activeTab === 'Đang đợi'">
         <table class="request-table" v-if="pendingRequests.length">
           <thead>
@@ -41,8 +40,8 @@
               <td>{{ req.location }}</td>
               <td>{{ req.purpose }}</td>
               <td class="actions">
-                <button class="accept-btn" @click="acceptRequest(index)">Chấp nhận</button>
-                <button class="reject-btn" @click="rejectRequest(index)">Từ chối</button>
+                <button class="accept-btn" @click="acceptRequest(req)">Chấp nhận</button>
+                <button class="reject-btn" @click="rejectRequest(req)">Từ chối</button>
               </td>
             </tr>
           </tbody>
@@ -50,7 +49,6 @@
         <p v-else>Không có yêu cầu nào đang đợi.</p>
       </div>
 
-      <!-- TAB: Đã chấp nhận -->
       <div v-else-if="activeTab === 'Đã chấp nhận'">
         <table class="request-table" v-if="acceptedRequests.length">
           <thead>
@@ -72,10 +70,8 @@
               <td>{{ formatDate(req.requestDate) }}</td>
               <td>{{ formatDate(req.acceptedDate) }}</td>
               <td>Tiết {{ req.startPeriod }} - {{ req.endPeriod }}</td>
-
-              <!-- ❌ Không hiển thị req.location và req.purpose -->
               <td class="actions">
-                <button class="return-btn" @click="returnDevice(index)">Trả lại</button>
+                <button class="return-btn" @click="returnDevice(req)">Trả lại</button>
               </td>
             </tr>
           </tbody>
@@ -83,7 +79,6 @@
         <p v-else>Chưa có yêu cầu nào được chấp nhận.</p>
       </div>
 
-      <!-- TAB: Đã từ chối -->
       <div v-else-if="activeTab === 'Đã từ chối'">
         <table class="request-table" v-if="rejectedRequests.length">
           <thead>
@@ -92,7 +87,6 @@
               <th>Tên thiết bị</th>
               <th>Mã thiết bị</th>
               <th>Ngày yêu cầu</th>
-              <!-- ❌ Bỏ Nơi sử dụng và Mục đích -->
             </tr>
           </thead>
           <tbody>
@@ -101,14 +95,12 @@
               <td>{{ req.deviceName }}</td>
               <td>{{ req.deviceCode }}</td>
               <td>{{ formatDate(req.requestDate) }}</td>
-              <!-- ❌ Không hiển thị req.location và req.purpose -->
             </tr>
           </tbody>
         </table>
         <p v-else>Không có yêu cầu nào bị từ chối.</p>
       </div>
 
-      <!-- TAB: Đã trả lại -->
       <div v-else-if="activeTab === 'Đã trả lại'">
         <table class="request-table" v-if="returnedRequests.length">
           <thead>
@@ -145,6 +137,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { borrowApi } from '@/config/api.js'
+// 👇 IMPORT TOAST
+import { toast } from '@/utils/toast.js'
 
 // Tabs
 const tabs = ['Đang đợi', 'Đã chấp nhận', 'Đã từ chối', 'Đã trả lại']
@@ -158,17 +152,14 @@ const returnedRequests = ref([])
 
 // Trạng thái tải
 const loading = ref(false)
-const error = ref(null)
 
 /* =========================
    📦 HÀM GỌI API THEO TRẠNG THÁI
 ========================= */
 async function fetchRequestsByStatus(status) {
   loading.value = true
-  error.value = null
 
   try {
-    // Map tên tab → endpoint backend
     const mapStatus = {
       'Đang đợi': 'pending',
       'Đã chấp nhận': 'approved',
@@ -178,7 +169,6 @@ async function fetchRequestsByStatus(status) {
 
     const apiStatus = mapStatus[status]
     const data = await borrowApi.getByStatus(apiStatus)
-    console.log(`📦 Dữ liệu [${status}]:`, data)
 
     const mapped = data.map((item) => ({
       requestId: item.requestId,
@@ -192,9 +182,6 @@ async function fetchRequestsByStatus(status) {
       returnDate: item.returnDate,
       location: item.location || item.usageLocation || '—',
       purpose: item.purpose || '—',
-
-      // ⭐ Thêm 2 dòng này
-
       status: item.status || status,
     }))
 
@@ -203,70 +190,86 @@ async function fetchRequestsByStatus(status) {
     if (status === 'Đã từ chối') rejectedRequests.value = mapped
     if (status === 'Đã trả lại') returnedRequests.value = mapped
   } catch (err) {
-    console.error(`❌ Lỗi khi tải dữ liệu [${status}]:`, err)
-    error.value = `Không thể tải dữ liệu trạng thái "${status}".`
+    console.error(`❌ Lỗi tải dữ liệu:`, err)
+    // 🔥 Báo lỗi nhẹ nhàng bằng toast thay vì console đỏ lòm
+    toast.error('Không thể tải dữ liệu yêu cầu.')
   } finally {
     loading.value = false
   }
 }
 
-/* =========================
-   🧠 CHUYỂN TAB TỰ ĐỘNG GỌI API
-========================= */
 watch(activeTab, (tab) => {
   fetchRequestsByStatus(tab)
 })
 
-// Lần đầu mở trang → tải tab đầu tiên
 onMounted(() => {
   fetchRequestsByStatus(activeTab.value)
 })
 
 /* =========================
-   ⚙️ CÁC HÀNH ĐỘNG: DUYỆT / TỪ CHỐI / TRẢ
+   ⚙️ CÁC HÀNH ĐỘNG (Đã nâng cấp Toast & Confirm)
 ========================= */
-async function acceptRequest(index) {
-  const req = pendingRequests.value[index]
+
+// 1. CHẤP NHẬN YÊU CẦU
+async function acceptRequest(req) {
   try {
     const result = await borrowApi.approveRequest(req.requestId)
     if (result.ok) {
-      alert(`✅ Thành công (${result.status}): ${result.message}`)
+      toast.success('Đã chấp nhận yêu cầu mượn thiết bị!')
       fetchRequestsByStatus(activeTab.value)
     } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
+      toast.error(`Lỗi: ${result.message}`)
     }
   } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
+    toast.error('Lỗi kết nối đến máy chủ.')
   }
 }
 
-async function rejectRequest(index) {
-  const req = pendingRequests.value[index]
+// 2. TỪ CHỐI YÊU CẦU (Có xác nhận)
+async function rejectRequest(req) {
+  // 🔥 Hộp thoại xác nhận trước khi từ chối
+  const confirmed = await toast.confirm(
+    'Từ chối yêu cầu?',
+    'Bạn có chắc chắn muốn từ chối yêu cầu này không?',
+    'Từ chối',
+  )
+
+  if (!confirmed) return
+
   try {
     const result = await borrowApi.rejectRequest(req.requestId)
     if (result.ok) {
-      alert(`🚫 Từ chối (${result.status}): ${result.message}`)
+      toast.success('Đã từ chối yêu cầu.')
       fetchRequestsByStatus(activeTab.value)
     } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
+      toast.error(`Lỗi: ${result.message}`)
     }
   } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
+    toast.error('Lỗi kết nối đến máy chủ.')
   }
 }
 
-async function returnDevice(index) {
-  const req = acceptedRequests.value[index]
+// 3. TRẢ THIẾT BỊ (Có xác nhận)
+async function returnDevice(req) {
+  // 🔥 Hộp thoại xác nhận trả
+  const confirmed = await toast.confirm(
+    'Xác nhận trả thiết bị?',
+    'Xác nhận thiết bị đã được kiểm tra và trả về kho.',
+    'Xác nhận trả',
+  )
+
+  if (!confirmed) return
+
   try {
     const result = await borrowApi.return(req.requestId)
     if (result.ok) {
-      alert(`↩️ Đã trả (${result.status}): ${result.message}`)
+      toast.success('Đã cập nhật trạng thái trả thiết bị!')
       fetchRequestsByStatus(activeTab.value)
     } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
+      toast.error(`Lỗi: ${result.message}`)
     }
   } catch (error) {
-    alert('❌ Lỗi kết nối đến máy chủ.')
+    toast.error('Lỗi kết nối đến máy chủ.')
   }
 }
 
@@ -283,113 +286,26 @@ function formatDate(dateStr) {
 }
 </script>
 
-<!-- <script setup>
-import { ref, onMounted } from 'vue'
-import { borrowApi } from '@/config/api.js' // 👈 đường dẫn đúng tới file bạn gửi
-
-// Tabs
-const tabs = ['Đang đợi', 'Đã chấp nhận', 'Đã từ chối', 'Đã trả lại']
-const activeTab = ref('Đang đợi')
-
-// Dữ liệu
-const pendingRequests = ref([])
-const acceptedRequests = ref([])
-const rejectedRequests = ref([])
-const returnedRequests = ref([])
-
-// Hàm gọi API
-
-async function fetchPendingRequests() {
-  try {
-    const data = await borrowApi.getAll()
-    console.log('📦 Dữ liệu từ API:', data)
-
-    // Dữ liệu API đã là mảng
-    pendingRequests.value = data.map((item) => ({
-      requestId: item.requestId,
-      user: item.borrower || 'Không rõ',
-      deviceName: item.deviceName,
-      deviceCode: item.instanceCode,
-      requestDate: new Date(item.requestDate).toLocaleString(),
-      location: item.location || item.usageLocation || '—',
-      purpose: item.purpose || '—',
-      status: item.status || 'Pending',
-    }))
-  } catch (error) {
-    console.error('❌ Lỗi khi tải danh sách yêu cầu:', error)
-  }
-}
-
-onMounted(() => {
-  fetchPendingRequests()
-})
-
-// 👉 Hàm format ngày dd/mm/yyyy
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
-// Xử lý yêu cầu
-async function acceptRequest(index) {
-  const req = pendingRequests.value[index]
-  try {
-    const result = await borrowApi.approveRequest(req.requestId)
-
-    if (result.ok) {
-      alert(`✅ Thành công (${result.status}): ${result.message}`)
-      const accepted = { ...req, acceptedDate: new Date().toISOString() }
-      acceptedRequests.value.push(accepted)
-      pendingRequests.value.splice(index, 1)
-    } else {
-      alert(`❌ Lỗi (${result.status}): ${result.message}`)
-    }
-  } catch (error) {
-    console.error('❌ Lỗi khi chấp nhận yêu cầu:', error)
-    alert('❌ Đã xảy ra lỗi kết nối đến máy chủ.')
-  }
-}
-
-async function rejectRequest(index) {
-  const req = pendingRequests.value[index]
-  try {
-    await borrowApi.rejectRequest(req.requestId)
-    console.log(`❌ Đã từ chối yêu cầu ID ${req.requestId}`)
-    rejectedRequests.value.push(req)
-    pendingRequests.value.splice(index, 1)
-  } catch (error) {
-    console.error('Lỗi khi từ chối yêu cầu:', error)
-    alert('Không thể từ chối yêu cầu.')
-  }
-}
-
-function returnDevice(index) {
-  const req = acceptedRequests.value[index]
-  const returned = { ...req, returnDate: new Date().toISOString() }
-  console.log('↩️ Thiết bị đã được trả lại:', returned)
-  returnedRequests.value.push(returned)
-  acceptedRequests.value.splice(index, 1)
-}
-</script> -->
-
 <style scoped>
 .requests-page {
-  /* background: #fff; */ /* Bỏ nền trắng */
-  padding: 20px 12px; /* Đồng bộ padding */
-  border-radius: 12px;
-  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); */ /* Bỏ bóng sáng */
-  color: #eeeeee; /* ✅ Chữ chính */
+  padding: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
+  color: #eeeeee;
+}
+
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #eeeeee;
+  margin: 0 0 24px 0;
 }
 
 /* Tabs */
 .tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid rgba(238, 238, 238, 0.1);
   margin-bottom: 20px;
 }
 
@@ -401,47 +317,61 @@ function returnDevice(index) {
   cursor: pointer;
   border-radius: 8px 8px 0 0;
   transition: all 0.2s ease;
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ (cho tab không active) */
+  color: rgba(238, 238, 238, 0.6);
+  font-size: 14px;
 }
 
 .tab-btn:hover {
-  background: rgba(0, 173, 181, 0.1); /* Nền nhấn mờ */
-  color: #00adb5; /* ✅ Chữ nhấn */
+  background: rgba(0, 173, 181, 0.1);
+  color: #00adb5;
+}
+
+.tab-btn.active {
+  background: rgba(0, 173, 181, 0.1);
+  color: #00adb5;
+  border-bottom: 2px solid #00adb5;
+  margin-bottom: -2px;
 }
 
 .tab-content {
-  background: #393e46; /* Nền phụ */
+  background: #393e46;
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 173, 181, 0.2); /* Viền nhấn mờ */
+  border: 1px solid rgba(0, 173, 181, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Chữ khi không có dữ liệu */
 .tab-content p {
-  color: rgba(238, 238, 238, 0.7); /* ✅ Chữ phụ */
+  color: rgba(238, 238, 238, 0.6);
   text-align: center;
-  padding: 20px 0;
+  padding: 40px 0;
+  font-style: italic;
 }
 
 /* Bảng */
 .request-table {
   width: 100%;
   border-collapse: collapse;
-  background: #393e46; /* Nền phụ */
 }
+
 .request-table th,
 .request-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(0, 173, 181, 0.15); /* Viền nhấn mờ */
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(238, 238, 238, 0.1);
   text-align: left;
 }
 
 .request-table th {
-  background: #222831; /* Nền chính (tối nhất) */
-  color: #00adb5; /* ✅ Chữ nhấn */
+  background: #222831;
+  color: #00adb5;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.request-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .actions {
@@ -459,38 +389,37 @@ function returnDevice(index) {
   cursor: pointer;
   font-weight: 500;
   color: white;
-  transition: background 0.2s ease;
+  font-size: 13px;
+  transition: all 0.2s ease;
 }
 
-/* Nút Chấp nhận */
 .accept-btn {
-  background: #00adb5; /* ✅ Nền nhấn */
-  color: #222831; /* Chữ tối */
-  font-weight: 600;
+  background: rgba(0, 173, 181, 0.2);
+  color: #00adb5;
+  border: 1px solid rgba(0, 173, 181, 0.3);
 }
 
 .accept-btn:hover {
-  background: #eeeeee; /* Hover sáng */
+  background: rgba(0, 173, 181, 0.3);
 }
 
-/* Nút Từ chối (Giữ màu đỏ vì mang tính ngữ nghĩa) */
 .reject-btn {
-  background: #ef4444;
-  color: #ffffff;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .reject-btn:hover {
-  background: #dc2626;
+  background: rgba(239, 68, 68, 0.3);
 }
 
-/* Nút Trả lại (Dùng style giống Chấp nhận) */
 .return-btn {
-  background: #00adb5; /* ✅ Nền nhấn */
-  color: #222831; /* Chữ tối */
-  font-weight: 600;
+  background: rgba(16, 185, 129, 0.2); /* Màu xanh lá */
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .return-btn:hover {
-  background: #eeeeee; /* Hover sáng */
+  background: rgba(16, 185, 129, 0.3);
 }
 </style>

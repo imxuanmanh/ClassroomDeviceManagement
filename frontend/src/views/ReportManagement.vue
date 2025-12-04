@@ -101,10 +101,10 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-// 1. IMPORT TỪ WRAPPER (Thay vì import API_CONFIG để fetch)
 import { reportApi } from '@/config/apiWrapper.js'
-// Vẫn giữ API_CONFIG nếu cần lấy base url cho ảnh, nhưng xử lý khéo hơn
 import { API_CONFIG } from '@/config/api.js'
+// 👇 Import bộ Toast vừa tạo
+import { toast } from '@/utils/toast.js'
 
 export default {
   name: 'ReportManagement',
@@ -121,168 +121,141 @@ export default {
     ]
 
     const reports = ref([])
+    const reportsByStatus = ref({ 1: [], 2: [], 3: [] })
 
-    // Lưu trữ dữ liệu cache
-    const reportsByStatus = ref({
-      1: [], // pending
-      2: [], // processing
-      3: [], // completed
-    })
+    // ... (Giữ nguyên logic mapStatusIdToStatus, formatDate, getReportCount, helper...)
+    const mapStatusIdToStatus = (id) =>
+      ({ 1: 'pending', 2: 'processing', 3: 'completed' })[id] || 'pending'
 
-    // Map status ID
-    const mapStatusIdToStatus = (statusId) => {
-      const statusMap = { 1: 'pending', 2: 'processing', 3: 'completed' }
-      return statusMap[statusId] || 'pending'
+    const getReportCount = (status) => {
+      const map = { pending: 1, processing: 2, completed: 3 }
+      return reportsByStatus.value[map[status]]?.length || 0
     }
 
-    // --- HÀM FETCH DỮ LIỆU (Đã sửa để dùng reportApi) ---
+    const formatDate = (date) => (date ? new Date(date).toLocaleDateString('vi-VN') : '')
+
+    // Hàm remove local helper
+    const removeReportFromLocal = (statusId, reportId) => {
+      const idx = reportsByStatus.value[statusId].findIndex((r) => r.reportId === reportId)
+      if (idx !== -1) reportsByStatus.value[statusId].splice(idx, 1)
+
+      if (activeTab.value === mapStatusIdToStatus(statusId)) {
+        const vIdx = reports.value.findIndex((r) => r.reportId === reportId)
+        if (vIdx !== -1) reports.value.splice(vIdx, 1)
+      }
+    }
+
+    // Fetch Data
     const fetchReportsForTab = async (statusId) => {
-      // Nếu đang loading thì thôi (tránh spam click)
-      // loading.value = true;
-
       try {
-        // 🔥 GỌI QUA WRAPPER (Nó sẽ tự quyết định lấy Mock hay Real)
         const data = await reportApi.getByStatus(statusId)
-
         const baseUrlWithoutApi = API_CONFIG.BASE_URL.replace('/api', '')
 
-        // Transform dữ liệu
         const transformedData = data.map((item) => ({
           reportId: item.reportId,
           status: mapStatusIdToStatus(item.status),
           reporterName: item.userFullName,
           deviceName: item.deviceName,
           description: item.description,
-          // Logic ảnh: Nếu mock data trả về null hoặc đường dẫn
           image: item.imagePath
             ? item.imagePath.startsWith('http')
               ? item.imagePath
               : `${baseUrlWithoutApi}${item.imagePath}`
             : null,
-          createdDate: item.reportDate
-            ? new Date(item.reportDate).toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+          createdDate: item.reportDate ? new Date(item.reportDate).toISOString().split('T')[0] : '',
         }))
 
         reportsByStatus.value[statusId] = transformedData
 
-        // Cập nhật UI nếu đang ở đúng tab
-        const currentStatusMap = { pending: 1, processing: 2, completed: 3 }
-        if (currentStatusMap[activeTab.value] === statusId) {
+        const currentMap = { pending: 1, processing: 2, completed: 3 }
+        if (currentMap[activeTab.value] === statusId) {
           reports.value = transformedData
         }
       } catch (error) {
-        console.error(`Error fetching reports for status ${statusId}:`, error)
+        console.error(error)
         reportsByStatus.value[statusId] = []
-      } finally {
-        loading.value = false
       }
     }
 
-    // --- XỬ LÝ TAB ---
-    const handleTabChange = (statusId) => {
-      activeTab.value = statusId === 1 ? 'pending' : statusId === 2 ? 'processing' : 'completed'
-      // Ưu tiên lấy từ cache trước để nhanh
-      reports.value = reportsByStatus.value[statusId] || []
-      // Sau đó fetch lại để update mới nhất
-      fetchReportsForTab(statusId)
-    }
-
-    // --- CẬP NHẬT TRẠNG THÁI (Đã sửa dùng reportApi) ---
+    // --- CẬP NHẬT TRẠNG THÁI (Dùng Toast) ---
     const updateReportStatus = async (reportId, newStatus) => {
       try {
         if (activeTab.value === 'pending') {
-          // Gọi API xử lý
           await reportApi.processReport(reportId)
-
-          // UI Update: Xóa khỏi tab Pending, reload tab Processing
           removeReportFromLocal(1, reportId)
           fetchReportsForTab(2)
-          alert('Đã chuyển sang trạng thái đang xử lý!')
+
+          // 🔥 Toast Thành công
+          toast.success('Đã chuyển sang trạng thái đang xử lý!')
         } else if (activeTab.value === 'processing') {
           const isSuccess = newStatus !== 'failed'
-          // Gọi API hoàn thành
           await reportApi.completeReport(reportId, isSuccess)
-
-          // UI Update
           removeReportFromLocal(2, reportId)
-          if (isSuccess) fetchReportsForTab(3) // Reload tab Completed
-          alert(isSuccess ? 'Đã hoàn thành xử lý!' : 'Đã báo cáo không thể xử lý!')
+          if (isSuccess) fetchReportsForTab(3)
+
+          // 🔥 Toast tùy biến
+          if (isSuccess) {
+            toast.success('Báo cáo đã hoàn thành!')
+          } else {
+            toast.warning('Đã xác nhận không thể xử lý!')
+          }
         }
       } catch (error) {
-        console.error('Lỗi cập nhật trạng thái:', error)
-        alert('Có lỗi xảy ra. Vui lòng thử lại.')
+        console.error(error)
+        // 🔥 Toast Lỗi
+        toast.error('Có lỗi xảy ra, vui lòng thử lại.')
       }
     }
 
-    // --- TỪ CHỐI BÁO CÁO (Đã sửa dùng reportApi) ---
+    // --- TỪ CHỐI (Dùng Confirm Dialog đẹp) ---
     const rejectReport = async (reportId) => {
-      if (!confirm('Bạn có chắc muốn từ chối báo cáo này?')) return
+      // 🔥 Hộp thoại xác nhận xịn xò
+      const confirmed = await toast.confirm(
+        'Từ chối báo cáo?',
+        'Hành động này không thể hoàn tác.',
+        'Từ chối ngay',
+      )
 
-      try {
-        await reportApi.cancelReport(reportId)
+      if (confirmed) {
+        try {
+          await reportApi.cancelReport(reportId)
+          removeReportFromLocal(1, reportId)
 
-        removeReportFromLocal(1, reportId)
-        alert('Đã từ chối báo cáo thành công.')
-      } catch (error) {
-        console.error('Error rejecting report:', error)
-        alert('Lỗi khi từ chối báo cáo.')
+          toast.success('Đã từ chối báo cáo.')
+        } catch (error) {
+          toast.error('Lỗi khi từ chối báo cáo.')
+        }
       }
     }
 
-    // Helper: Xóa item khỏi danh sách local để UI cập nhật ngay
-    const removeReportFromLocal = (statusId, reportId) => {
-      const index = reportsByStatus.value[statusId].findIndex((r) => r.reportId === reportId)
-      if (index !== -1) {
-        reportsByStatus.value[statusId].splice(index, 1)
-      }
-      // Nếu đang view tab đó thì cập nhật luôn biến reports
-      if (activeTab.value === (statusId === 1 ? 'pending' : 'processing')) {
-        const viewIndex = reports.value.findIndex((r) => r.reportId === reportId)
-        if (viewIndex !== -1) reports.value.splice(viewIndex, 1)
-      }
-    }
-
-    // --- CÁC HÀM KHÁC GIỮ NGUYÊN ---
-    const getReportCount = (status) => {
-      const statusIdMap = { pending: 1, processing: 2, completed: 3 }
-      const statusId = statusIdMap[status]
-      return reportsByStatus.value[statusId]?.length || 0
-    }
-
-    const formatDate = (dateString) => {
-      if (!dateString) return ''
-      const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
-      return new Date(dateString).toLocaleDateString('vi-VN', options)
-    }
-
-    const viewImageDetail = (report) => {
-      selectedReport.value = report
+    // --- Các hàm Modal ảnh giữ nguyên ---
+    const viewImageDetail = (r) => {
+      selectedReport.value = r
       showImageModal.value = true
     }
-
     const closeImageModal = () => {
       showImageModal.value = false
       selectedReport.value = null
     }
 
-    // Khởi chạy
+    const handleTabChange = (statusId) => {
+      activeTab.value = mapStatusIdToStatus(statusId)
+      reports.value = reportsByStatus.value[statusId] || []
+      fetchReportsForTab(statusId)
+    }
+
     onMounted(() => {
       loading.value = true
-      Promise.all([fetchReportsForTab(1), fetchReportsForTab(2), fetchReportsForTab(3)]).finally(
-        () => {
-          loading.value = false
-        },
+      Promise.all([1, 2, 3].map((id) => fetchReportsForTab(id))).finally(
+        () => (loading.value = false),
       )
     })
-
-    const filteredReports = computed(() => reports.value)
 
     return {
       activeTab,
       tabs,
-      reports, // filteredReports trỏ vào đây
-      filteredReports,
+      reports,
+      filteredReports: computed(() => reports.value),
       getReportCount,
       formatDate,
       updateReportStatus,

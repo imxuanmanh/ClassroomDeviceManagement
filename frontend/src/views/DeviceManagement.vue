@@ -1,12 +1,10 @@
 <template>
   <section class="device">
-    <!-- Header -->
     <header class="page-header">
       <h2>Danh Sách Thiết bị</h2>
     </header>
 
     <div class="content">
-      <!-- Modal thêm/sửa model -->
       <DeviceModal
         v-if="showModelForm"
         :value="form"
@@ -16,7 +14,6 @@
         @close="closeModelForm"
       />
 
-      <!-- Modal thêm instance -->
       <InstanceModal
         v-if="showInstanceForm"
         :title="`Thêm thiết bị vào ${selectedModelName}`"
@@ -28,7 +25,6 @@
         @close="closeInstanceForm"
       />
 
-      <!-- Danh sách category -->
       <div v-if="!selectedCategory" class="categories">
         <div
           v-for="category in categories"
@@ -39,7 +35,6 @@
           <h3>{{ category.name }}</h3>
         </div>
 
-        <!-- Nút thêm category -->
         <div v-if="isAdmin" class="category-card add-category-card" @click="openAddCategory">
           <span class="plus">+</span>
           <p>Thêm mới</p>
@@ -57,7 +52,6 @@
         @close="closeCategoryForm"
       />
 
-      <!-- Chi tiết model -->
       <div v-if="selectedCategory" class="models-view">
         <div class="models-header">
           <div class="left-controls">
@@ -65,7 +59,6 @@
             <h3>{{ selectedCategory.name }}</h3>
           </div>
 
-          <!-- Chỉ admin mới thấy nút thêm -->
           <button v-if="isAdmin" class="add-btn" @click="openCreate">➕ Thêm Model</button>
         </div>
 
@@ -93,7 +86,6 @@
                   <td>{{ m.totalQuantity }}</td>
                   <td>{{ m.availableQuantity }}</td>
 
-                  <!-- Nút toggle chi tiết -->
                   <td class="action-cell">
                     <button
                       class="toggle-btn"
@@ -114,7 +106,6 @@
                   </td>
                 </tr>
 
-                <!-- Bảng con hiển thị danh sách thiết bị instances -->
                 <tr v-if="expandedModelIds.includes(m.modelId)" class="model-details">
                   <td colspan="7">
                     <table class="sub-table">
@@ -143,7 +134,6 @@
                           <td>{{ instance.usageDuration || '---' }}</td>
                         </tr>
 
-                        <!-- Dòng thêm thiết bị mới -->
                         <tr v-if="isAdmin" class="add-instance-row">
                           <td colspan="5">
                             <button
@@ -182,7 +172,8 @@ import InstanceModal from '@/components/Device/InstanceModal.vue'
 import { deviceApi, categoryApi, modelApi, instanceApi } from '@/config/apiWrapper'
 import { useDeviceStore } from '@/stores/device'
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+// 👇 IMPORT TOAST (Thay thế ElMessage)
+import { toast } from '@/utils/toast.js'
 
 const isAdmin = true
 const deviceStore = useDeviceStore()
@@ -221,7 +212,8 @@ async function fetchCategories() {
     await deviceStore.fetchCategories()
   } catch {
     error.value = 'Không thể tải danh sách loại thiết bị'
-    ElMessage.error('Không thể tải danh sách loại thiết bị')
+    // 🔥 Toast error
+    toast.error('Không thể tải danh sách loại thiết bị')
   } finally {
     loading.value = false
   }
@@ -238,7 +230,8 @@ async function openCategory(category) {
     // 🔄 Cập nhật Store để Dashboard nhận được update
     await deviceStore.fetchModelsByCategory(category.id)
   } catch {
-    ElMessage.error('Không thể tải danh sách model')
+    // 🔥 Toast error
+    toast.error('Không thể tải danh sách model')
     modelsByCategory.value[category.id] = []
   } finally {
     loading.value = false
@@ -276,7 +269,8 @@ async function save(payload) {
   try {
     if (editingIndex.value !== null) {
       await deviceApi.update(payload.deviceId, payload)
-      ElMessage.success('Cập nhật model thành công!')
+      // 🔥 Toast success
+      toast.success('Cập nhật model thành công!')
     } else {
       await modelApi.create({
         modelName: payload.deviceName,
@@ -284,7 +278,8 @@ async function save(payload) {
         specifications: payload.specification,
         storageLocation: payload.storageLocation,
       })
-      ElMessage.success('Thêm model thành công!')
+      // 🔥 Toast success
+      toast.success('Thêm model thành công!')
     }
 
     // Reload models cho category hiện tại
@@ -298,7 +293,8 @@ async function save(payload) {
 
     closeModelForm()
   } catch {
-    ElMessage.error('Lưu thiết bị thất bại!')
+    // 🔥 Toast error
+    toast.error('Lưu thiết bị thất bại!')
   } finally {
     loading.value = false
   }
@@ -316,7 +312,8 @@ function closeCategoryForm() {
 
 async function addCategory(payload) {
   if (!payload.name.trim()) {
-    ElMessage.warning('Vui lòng nhập tên loại thiết bị')
+    // 🔥 Toast warning
+    toast.warning('Vui lòng nhập tên loại thiết bị')
     return
   }
 
@@ -327,10 +324,12 @@ async function addCategory(payload) {
     // 🔄 Refresh store để Dashboard update
     await deviceStore.fetchCategories()
 
-    ElMessage.success('Thêm loại thiết bị thành công!')
+    // 🔥 Toast success
+    toast.success('Thêm loại thiết bị thành công!')
     closeCategoryForm()
   } catch {
-    ElMessage.error('Không thể thêm loại thiết bị')
+    // 🔥 Toast error
+    toast.error('Không thể thêm loại thiết bị')
   }
 }
 
@@ -355,7 +354,8 @@ async function handleToggleDetails(modelId) {
     await deviceStore.fetchModelsByCategory(selectedCategory.value.id)
   } catch (err) {
     console.error('❌ Lỗi tải instances của model:', err)
-    ElMessage.error('Không thể tải danh sách thiết bị')
+    // 🔥 Toast error
+    toast.error('Không thể tải danh sách thiết bị chi tiết')
     instancesByModel.value[modelId] = []
   } finally {
     loadingInstances.value[modelId] = false
@@ -386,7 +386,8 @@ async function saveInstance(payload) {
   loading.value = true
   try {
     await instanceApi.create(payload)
-    ElMessage.success('Thêm thiết bị thành công!')
+    // 🔥 Toast success
+    toast.success('Thêm thiết bị thành công!')
 
     // Refresh instances nếu đang mở chi tiết
     if (expandedModelIds.value && expandedModelIds.value.includes(payload.modelId)) {
@@ -408,7 +409,8 @@ async function saveInstance(payload) {
     closeInstanceForm()
   } catch (err) {
     console.error('Save instance error:', err)
-    ElMessage.error('Lỗi khi thêm thiết bị: ' + (err.message || 'Không rõ'))
+    // 🔥 Toast error
+    toast.error('Lỗi khi thêm thiết bị: ' + (err.message || 'Không rõ'))
   } finally {
     loading.value = false
   }

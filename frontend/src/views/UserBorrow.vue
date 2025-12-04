@@ -1,6 +1,5 @@
 <template>
   <section class="device">
-    <!-- Header -->
     <header class="page-header">
       <h2>Danh Sách Thiết bị</h2>
       <div class="actions">
@@ -10,7 +9,6 @@
     </header>
 
     <div class="content">
-      <!-- Modal thêm/sửa thiết bị -->
       <DeviceModal
         v-if="showForm"
         :value="form"
@@ -20,7 +18,6 @@
         @close="closeForm"
       />
 
-      <!-- Modal mượn thiết bị -->
       <div v-if="showBorrowForm" class="borrow-overlay">
         <div class="borrow-form">
           <h3>Mượn thiết bị</h3>
@@ -36,11 +33,9 @@
             <input v-model="usagePurpose" placeholder="Nhập mục đích sử dụng" />
           </div>
 
-          <!-- Thanh trượt chọn tiết -->
           <div class="field">
             <label>Chọn tiết sử dụng</label>
 
-            <!-- ✅ Hiển thị từng số tiết phía trên -->
             <div class="period-numbers">
               <span v-for="period in validPeriods" :key="period" class="period-num">
                 {{ period }}
@@ -80,7 +75,6 @@
         </div>
       </div>
 
-      <!-- Danh sách category -->
       <div v-if="!selectedCategory" class="categories">
         <div
           v-for="category in categories"
@@ -94,7 +88,6 @@
         <div v-if="categories.length === 0" class="empty">Không có dữ liệu</div>
       </div>
 
-      <!-- Chi tiết model -->
       <div v-else class="models-view">
         <div class="models-header">
           <button class="back-btn" @click="backToCategories">← Quay lại</button>
@@ -148,6 +141,8 @@ import { ref, onMounted, watch } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
 import { deviceApi, categoryApi, borrowApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
+// 👇 IMPORT TOAST
+import { toast } from '@/utils/toast.js'
 
 const auth = useAuthStore()
 const isAdmin = auth.roleId === 1
@@ -157,7 +152,6 @@ const categories = ref([])
 const modelsByCategory = ref({})
 const selectedCategory = ref(null)
 const loading = ref(false)
-const error = ref('')
 const q = ref('')
 const items = ref([])
 
@@ -193,7 +187,7 @@ async function fetchCategories() {
   try {
     categories.value = await categoryApi.getAll()
   } catch {
-    error.value = 'Không thể tải danh sách loại thiết bị'
+    toast.error('Không thể tải danh sách loại thiết bị')
   } finally {
     loading.value = false
   }
@@ -205,7 +199,7 @@ async function fetchDevices() {
     const data = await deviceApi.getAll()
     items.value = Array.isArray(data) ? data : []
   } catch {
-    error.value = 'Không thể tải danh sách thiết bị'
+    toast.error('Không thể tải danh sách thiết bị')
   } finally {
     loading.value = false
   }
@@ -218,6 +212,7 @@ async function openCategory(category) {
       modelsByCategory.value[category.id] = await categoryApi.getModelsByCategory(category.id)
     } catch {
       modelsByCategory.value[category.id] = []
+      toast.error('Không thể tải danh sách model')
     }
   }
 }
@@ -244,19 +239,22 @@ function closeForm() {
   showForm.value = false
 }
 
+// Hàm lưu (Admin thêm/sửa)
 async function save(payload) {
   loading.value = true
   try {
     if (editingIndex.value !== null) {
       const id = items.value[editingIndex.value]?.deviceId
       await deviceApi.update(id, payload)
+      toast.success('Cập nhật thiết bị thành công!')
     } else {
       await deviceApi.create(payload)
+      toast.success('Thêm thiết bị mới thành công!')
     }
     await fetchDevices()
     closeForm()
   } catch {
-    error.value = 'Không thể lưu thiết bị'
+    toast.error('Không thể lưu thiết bị. Vui lòng thử lại.')
   } finally {
     loading.value = false
   }
@@ -287,11 +285,13 @@ function closeBorrowForm() {
   showBorrowForm.value = false
 }
 
+// Xác nhận mượn
 async function confirmBorrow() {
   if (!selectedModel.value) return
 
   if (!usageLocation.value.trim() || !usagePurpose.value.trim()) {
-    alert('⚠️ Vui lòng nhập đầy đủ vị trí và mục đích sử dụng.')
+    // 🔥 Thay alert bằng toast warning
+    toast.warning('Vui lòng nhập đầy đủ vị trí và mục đích sử dụng.')
     return
   }
 
@@ -307,19 +307,17 @@ async function confirmBorrow() {
     purpose: usagePurpose.value.trim(),
   }
 
-  console.log('📦 Payload gửi đi:', payload)
-  console.log(`🕐 Tiết: ${startPeriodValue} → ${endPeriodValue}`)
-
   try {
-    const result = await borrowApi.create(payload)
-    console.log('✅ Borrow request sent:', result)
-    alert(
-      `✅ Yêu cầu mượn thiết bị đã được gửi thành công!\n📍 Tiết ${startPeriodValue} đến tiết ${endPeriodValue}`,
-    )
+    await borrowApi.create(payload)
+
+    // 🔥 Thay alert bằng toast success
+    toast.success(`Gửi yêu cầu thành công! (Tiết ${startPeriodValue} - ${endPeriodValue})`)
+
     showBorrowForm.value = false
   } catch (err) {
     console.error('❌ Lỗi khi gửi yêu cầu mượn:', err)
-    alert('❌ Không thể gửi yêu cầu mượn thiết bị. Vui lòng thử lại sau.')
+    // 🔥 Thay alert bằng toast error
+    toast.error('Không thể gửi yêu cầu mượn. Vui lòng thử lại.')
   }
 }
 
@@ -340,12 +338,10 @@ onMounted(() => {
 
 // ✅ Cập nhật vị trí range khi startPeriodIndex thay đổi + CHẶN vượt qua
 watch(startPeriodIndex, () => {
-  // CHẶN: Icon đầu không được vượt icon sau
   if (startPeriodIndex.value > endPeriodIndex.value) {
     startPeriodIndex.value = endPeriodIndex.value
     return
   }
-
   const min = 0
   const max = validPeriods.length - 1
   const leftPercent = ((startPeriodIndex.value - min) / (max - min)) * 100
@@ -356,12 +352,10 @@ watch(startPeriodIndex, () => {
 
 // ✅ Cập nhật khi endPeriodIndex thay đổi + CHẶN về trước
 watch(endPeriodIndex, () => {
-  // CHẶN: Icon sau không được về trước icon đầu
   if (endPeriodIndex.value < startPeriodIndex.value) {
     endPeriodIndex.value = startPeriodIndex.value
     return
   }
-
   const min = 0
   const max = validPeriods.length - 1
   const rightPercent = ((endPeriodIndex.value - min) / (max - min)) * 100
@@ -617,7 +611,6 @@ td[colspan='7'] {
 }
 
 /* ====================== Thanh trượt chọn tiết ====================== */
-/* ✅ Hiển thị từng số tiết phía trên */
 .period-numbers {
   display: flex;
   justify-content: space-between;

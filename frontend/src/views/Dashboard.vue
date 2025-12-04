@@ -5,11 +5,6 @@
         <div>
           <h2>Tổng quan & Báo cáo</h2>
         </div>
-        <!-- Nút refresh thủ công -->
-        <button class="refresh-btn" @click="refreshData" :disabled="isRefreshing">
-          <span class="refresh-icon" :class="{ spinning: isRefreshing }">🔄</span>
-          <span>{{ isRefreshing ? 'Đang tải...' : 'Làm mới' }}</span>
-        </button>
       </header>
 
       <div class="stats-grid">
@@ -282,51 +277,6 @@ onUnmounted(() => {
   font-weight: 700;
   margin: 0;
   color: #00adb5;
-}
-
-/* === NÚT REFRESH === */
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #00adb5 0%, #007b82 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 173, 181, 0.3);
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #00c9d4 0%, #00adb5 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 173, 181, 0.5);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.refresh-icon {
-  font-size: 18px;
-  transition: transform 0.3s ease;
-}
-
-.refresh-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .subtitle {
