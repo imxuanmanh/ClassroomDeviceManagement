@@ -3,10 +3,10 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.103.78:5129/api',
+  BASE_URL: 'http://10.10.49.17:5129/api',
 
   ENDPOINTS: {
-    DEVICES: '/device',
+    DEVICES: '/instances',
     USERS: '/users',
     BORROWS: '/borrow-requests',
     HISTORY: '/history',
@@ -124,6 +124,28 @@ export const userApi = {
 
   getRejectedRequests: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/rejected`),
+
+  getNotifications: (userId) => apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications`),
+
+  /**
+   * ✅ NÚT TICK: Đánh dấu tất cả là đã đọc (Seen)
+   * Method: PATCH
+   * Endpoint: /users/{userId}/notification/seen
+   */
+  markAllSeen: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications/seen`, {
+      method: 'PATCH',
+    }),
+
+  /**
+   * ❌ NÚT X: Xóa tất cả thông báo (Deleted)
+   * Method: PATCH
+   * Endpoint: /users/{userId}/notification/deleted
+   */
+  deleteAllNotifications: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications/deleted`, {
+      method: 'PATCH',
+    }),
 }
 
 /**
@@ -337,4 +359,25 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+}
+
+/**
+ * ✨ API THÔNG BÁO
+ */
+export const notificationApi = {
+  // Lấy danh sách cũ
+  getByUser: (userId) => apiCall(`/notifications/${userId}`),
+
+  // Đánh dấu đã đọc
+  markAllAsRead: (userId) =>
+    apiCall(`/notifications/${userId}/read`, {
+      method: 'PUT',
+    }),
+
+  /**
+   * 📡 Lấy URL cho SSE (Đã cập nhật theo yêu cầu)
+   * Endpoint: /notifications/subscribe/${userId}
+   * Trả về URL string để useSSE sử dụng
+   */
+  getStreamUrl: (userId) => buildApiUrl(`/notifications/subscribe/${userId}`),
 }

@@ -55,7 +55,7 @@ const mockInstances = {
     {
       instanceId: 1001,
       instanceCode: 'DELL-XPS-001',
-      statusId: 3, // 🔥 ĐỔI statusId Ở ĐÂY
+      statusId: 2, // 🔥 ĐỔI statusId Ở ĐÂY
       currentLocation: 'Phòng học A',
       borrower: null,
       usageDuration: null,

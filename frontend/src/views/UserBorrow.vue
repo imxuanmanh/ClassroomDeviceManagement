@@ -139,9 +139,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import DeviceModal from '@/components/Device/DeviceModal.vue'
-import { deviceApi, categoryApi, borrowApi } from '@/config/api'
+import { categoryApi, borrowApi } from '@/config/api'
 import { useAuthStore } from '@/stores/auth'
-// 👇 IMPORT TOAST
 import { toast } from '@/utils/toast.js'
 
 const auth = useAuthStore()
@@ -153,14 +152,13 @@ const modelsByCategory = ref({})
 const selectedCategory = ref(null)
 const loading = ref(false)
 const q = ref('')
-const items = ref([])
 
 // ✅ Danh sách tiết theo yêu cầu: 1→4, 7→10, 11→14
 const validPeriods = [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14]
 
 // Index trong mảng validPeriods
-const startPeriodIndex = ref(0) // tương ứng tiết 1
-const endPeriodIndex = ref(2) // tương ứng tiết 3
+const startPeriodIndex = ref(0)
+const endPeriodIndex = ref(2)
 
 // CRUD form
 const form = ref({
@@ -188,18 +186,6 @@ async function fetchCategories() {
     categories.value = await categoryApi.getAll()
   } catch {
     toast.error('Không thể tải danh sách loại thiết bị')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function fetchDevices() {
-  loading.value = true
-  try {
-    const data = await deviceApi.getAll()
-    items.value = Array.isArray(data) ? data : []
-  } catch {
-    toast.error('Không thể tải danh sách thiết bị')
   } finally {
     loading.value = false
   }
@@ -239,19 +225,10 @@ function closeForm() {
   showForm.value = false
 }
 
-// Hàm lưu (Admin thêm/sửa)
 async function save(payload) {
   loading.value = true
   try {
-    if (editingIndex.value !== null) {
-      const id = items.value[editingIndex.value]?.deviceId
-      await deviceApi.update(id, payload)
-      toast.success('Cập nhật thiết bị thành công!')
-    } else {
-      await deviceApi.create(payload)
-      toast.success('Thêm thiết bị mới thành công!')
-    }
-    await fetchDevices()
+    toast.success('Thêm thiết bị mới thành công!')
     closeForm()
   } catch {
     toast.error('Không thể lưu thiết bị. Vui lòng thử lại.')
@@ -268,7 +245,6 @@ function openBorrowForm(model) {
   endPeriodIndex.value = 2
   showBorrowForm.value = true
 
-  // ✅ Cập nhật range ngay khi mở form
   setTimeout(() => {
     if (rangeElement.value) {
       const min = 0
@@ -285,12 +261,10 @@ function closeBorrowForm() {
   showBorrowForm.value = false
 }
 
-// Xác nhận mượn
 async function confirmBorrow() {
   if (!selectedModel.value) return
 
   if (!usageLocation.value.trim() || !usagePurpose.value.trim()) {
-    // 🔥 Thay alert bằng toast warning
     toast.warning('Vui lòng nhập đầy đủ vị trí và mục đích sử dụng.')
     return
   }
@@ -309,23 +283,17 @@ async function confirmBorrow() {
 
   try {
     await borrowApi.create(payload)
-
-    // 🔥 Thay alert bằng toast success
     toast.success(`Gửi yêu cầu thành công! (Tiết ${startPeriodValue} - ${endPeriodValue})`)
-
     showBorrowForm.value = false
   } catch (err) {
     console.error('❌ Lỗi khi gửi yêu cầu mượn:', err)
-    // 🔥 Thay alert bằng toast error
     toast.error('Không thể gửi yêu cầu mượn. Vui lòng thử lại.')
   }
 }
 
 onMounted(() => {
-  fetchDevices()
   fetchCategories()
 
-  // ✅ Khởi tạo vị trí range ban đầu
   if (rangeElement.value) {
     const min = 0
     const max = validPeriods.length - 1
@@ -336,7 +304,6 @@ onMounted(() => {
   }
 })
 
-// ✅ Cập nhật vị trí range khi startPeriodIndex thay đổi + CHẶN vượt qua
 watch(startPeriodIndex, () => {
   if (startPeriodIndex.value > endPeriodIndex.value) {
     startPeriodIndex.value = endPeriodIndex.value
@@ -350,7 +317,6 @@ watch(startPeriodIndex, () => {
   }
 })
 
-// ✅ Cập nhật khi endPeriodIndex thay đổi + CHẶN về trước
 watch(endPeriodIndex, () => {
   if (endPeriodIndex.value < startPeriodIndex.value) {
     endPeriodIndex.value = startPeriodIndex.value
@@ -610,7 +576,6 @@ td[colspan='7'] {
   }
 }
 
-/* ====================== Thanh trượt chọn tiết ====================== */
 .period-numbers {
   display: flex;
   justify-content: space-between;

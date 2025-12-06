@@ -287,7 +287,6 @@ async function save(payload) {
       const models = await categoryApi.getModelsByCategory(selectedCategory.value.id)
       modelsByCategory.value[selectedCategory.value.id] = models
 
-      // 🔄 Cập nhật Store để Dashboard tự động update
       await deviceStore.fetchModelsByCategory(selectedCategory.value.id)
     }
 

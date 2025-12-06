@@ -11,26 +11,42 @@
       <div class="notification-wrapper">
         <button class="notification-btn" aria-label="Notifications" @click="toggleNotification">
           <img src="@/components/icons/notification-bell.png" alt="Notifications" />
+          <span v-if="unreadCount > 0" class="notification-badge">
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
         </button>
 
-        <!-- Notification Dropdown -->
         <div v-if="notificationOpen" class="notification-dropdown">
           <div class="notification-header">
             <h3>Thông báo</h3>
-            <button @click="markAllAsRead" class="mark-read-btn" title="Đánh dấu đã đọc tất cả">
-              <span class="material-icons">done</span>
-            </button>
+            <div class="notification-actions">
+              <button @click="markAllAsRead" class="mark-read-btn" title="Đánh dấu đã đọc tất cả">
+                <span class="material-icons">done</span>
+              </button>
+              <button
+                @click="deleteAllNotifications"
+                class="delete-all-btn"
+                title="Xóa tất cả thông báo"
+              >
+                <span class="material-icons">close</span>
+              </button>
+            </div>
           </div>
           <div class="notification-content">
             <div v-if="notifications.length === 0" class="no-notifications">
               Bạn không có thông báo
             </div>
             <div v-else class="notification-list">
-              <div v-for="(notif, index) in notifications" :key="index" class="notification-item">
+              <div
+                v-for="(notif, index) in notifications"
+                :key="index"
+                class="notification-item"
+                :class="{ 'notification-read': notif.isRead }"
+              >
                 <span class="material-icons notif-icon">info</span>
                 <div class="notif-text">
                   <p>{{ notif.message }}</p>
-                  <small>{{ notif.time }}</small>
+                  <small v-if="notif.time">{{ notif.time }}</small>
                 </div>
               </div>
             </div>
@@ -59,20 +75,121 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { notificationApi, userApi } from '@/config/api'
+import { useSSE } from '@/composables/useSSE'
 
 const auth = useAuthStore()
 const router = useRouter()
 const dropdownOpen = ref(false)
 const notificationOpen = ref(false)
 
-// Dữ liệu thông báo mẫu - bạn có thể thay thế bằng dữ liệu thực từ API
-const notifications = ref([
-  // Để trống hoặc thêm thông báo mẫu
-])
+const notifications = ref([])
 
+// --- CHUẨN BỊ URL VÀ SSE ---
+const getUserId = () => {
+  const storedAuthStr = localStorage.getItem('auth')
+  let uid = auth.userId
+  if (!uid && storedAuthStr) {
+    const storedAuth = JSON.parse(storedAuthStr)
+    uid = storedAuth.userId
+  }
+  return uid
+}
+
+const userId = getUserId()
+const sseUrl = userId ? notificationApi.getStreamUrl(userId) : ''
+
+const {
+  data: sseData,
+  connect: connectSSE,
+  isConnected,
+} = useSSE(sseUrl, {
+  autoConnect: false,
+  reconnect: true,
+})
+
+// --- LOGIC XỬ LÝ DỮ LIỆU ---
+
+// 1. Theo dõi dữ liệu mới từ SSE
+watch(sseData, (newVal) => {
+  if (newVal && !newVal.deleted) {
+    const newNotif = {
+      id: newVal.id,
+      message: newVal.content,
+      isRead: !!newVal.seen,
+      time: new Date().toLocaleTimeString(),
+    }
+    notifications.value.unshift(newNotif)
+  }
+})
+
+// 2. Lấy thông báo cũ từ API (HTTP GET)
+const fetchOldNotifications = async () => {
+  if (!userId) return
+  try {
+    const result = await userApi.getNotifications(userId)
+    const rawData = Array.isArray(result) ? result : result.data || []
+
+    notifications.value = rawData.map((item) => ({
+      message: item.content,
+      time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : '',
+      isRead: item.isRead ?? false,
+    }))
+  } catch (error) {
+    console.error('Lỗi tải thông báo cũ:', error)
+  }
+}
+
+// 3. Xử lý nút TICK (Đánh dấu đã đọc tất cả)
+async function markAllAsRead() {
+  if (!userId) return
+
+  // Cập nhật UI
+  notifications.value.forEach((notif) => {
+    notif.isRead = true
+  })
+
+  // Gọi API
+  try {
+    await userApi.markAllSeen(userId)
+  } catch (error) {
+    console.error('Lỗi khi đánh dấu đã đọc:', error)
+  }
+}
+
+// 4. Xử lý nút X (Xóa tất cả thông báo)
+async function deleteAllNotifications() {
+  if (!userId) return
+
+  const oldNotifications = [...notifications.value]
+  notifications.value = []
+
+  try {
+    await userApi.deleteAllNotifications(userId)
+  } catch (error) {
+    console.error('Lỗi khi xóa thông báo:', error)
+    notifications.value = oldNotifications
+    alert('Không thể xóa thông báo. Vui lòng kiểm tra kết nối mạng.')
+  }
+}
+
+// --- LIFECYCLE ---
+onMounted(() => {
+  if (userId) {
+    fetchOldNotifications()
+    connectSSE()
+  }
+})
+
+// Computed
+const unreadCount = computed(() => {
+  return notifications.value.filter((notif) => notif.isRead === false).length
+})
+
+// --- CÁC HÀM SỰ KIỆN KHÁC ---
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
   notificationOpen.value = false
@@ -81,11 +198,6 @@ function toggleDropdown() {
 function toggleNotification() {
   notificationOpen.value = !notificationOpen.value
   dropdownOpen.value = false
-}
-
-function markAllAsRead() {
-  // Xử lý đánh dấu đã đọc tất cả thông báo
-  // Không đóng dropdown, giữ nguyên bảng thông báo
 }
 
 function goProfile() {
@@ -114,7 +226,6 @@ function handleLogout() {
   z-index: 5;
 }
 
-/* Decorative glow */
 .header::after {
   content: '';
   position: absolute;
@@ -281,6 +392,11 @@ function handleLogout() {
   border-bottom: 1px solid rgba(0, 239, 255, 0.1);
 }
 
+/* Notification Wrapper */
+.notification-wrapper {
+  position: relative;
+}
+
 /* Style cho nút notification */
 .notification-btn {
   background: rgba(0, 239, 255, 0.1);
@@ -294,6 +410,7 @@ function handleLogout() {
   justify-content: center;
   transition: all 0.3s ease;
   padding: 0;
+  position: relative;
 }
 
 .notification-btn:hover {
@@ -308,9 +425,44 @@ function handleLogout() {
   object-fit: contain;
 }
 
-/* Notification Wrapper */
-.notification-wrapper {
-  position: relative;
+/* Notification Badge - BADGE SỐ THÔNG BÁO */
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ff0844 0%, #ff4757 100%) !important;
+  color: white !important;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 2px solid #081b29;
+  box-shadow:
+    0 0 10px rgba(255, 8, 68, 0.6),
+    0 0 20px rgba(255, 8, 68, 0.4);
+  animation: pulse-badge 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 10px rgba(255, 8, 68, 0.6),
+      0 0 20px rgba(255, 8, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow:
+      0 0 15px rgba(255, 8, 68, 0.8),
+      0 0 25px rgba(255, 8, 68, 0.6);
+  }
 }
 
 /* Notification Dropdown */
@@ -347,7 +499,14 @@ function handleLogout() {
   color: #0ef;
 }
 
-.mark-read-btn {
+.notification-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mark-read-btn,
+.delete-all-btn {
   background: rgba(0, 239, 255, 0.1);
   border: 1px solid rgba(0, 239, 255, 0.3);
   border-radius: 8px;
@@ -359,15 +518,33 @@ function handleLogout() {
   justify-content: center;
 }
 
-.mark-read-btn .material-icons {
+.mark-read-btn .material-icons,
+.delete-all-btn .material-icons {
   color: #0ef;
   font-size: 20px;
 }
 
-.mark-read-btn:hover {
+.mark-read-btn:hover,
+.delete-all-btn:hover {
   background: rgba(0, 239, 255, 0.2);
   border-color: #0ef;
   box-shadow: 0 0 10px rgba(0, 239, 255, 0.3);
+}
+
+/* Style riêng cho nút xóa */
+.delete-all-btn {
+  background: rgba(255, 8, 68, 0.1);
+  border-color: rgba(255, 8, 68, 0.3);
+}
+
+.delete-all-btn .material-icons {
+  color: #ff0844;
+}
+
+.delete-all-btn:hover {
+  background: rgba(255, 8, 68, 0.2);
+  border-color: #ff0844;
+  box-shadow: 0 0 10px rgba(255, 8, 68, 0.4);
 }
 
 .notification-content {
@@ -403,6 +580,19 @@ function handleLogout() {
   border-bottom: none;
 }
 
+/* Style cho thông báo đã đọc - LÀM MỜ */
+.notification-read {
+  opacity: 0.4;
+}
+
+.notification-read .notif-text p {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notification-read .notif-icon {
+  color: rgba(0, 239, 255, 0.4);
+}
+
 .notif-icon {
   color: #0ef;
   font-size: 22px;
@@ -425,7 +615,6 @@ function handleLogout() {
   font-size: 12px;
 }
 
-/* Custom scrollbar for notification content */
 .notification-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -443,7 +632,6 @@ function handleLogout() {
   background: rgba(0, 239, 255, 0.5);
 }
 
-/* Animation lắc chuông */
 @keyframes ring-animation {
   0%,
   100% {

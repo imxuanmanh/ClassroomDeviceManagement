@@ -10,6 +10,9 @@ export const useDeviceStore = defineStore('device', () => {
   const loading = ref(false)
   const error = ref('')
 
+  // 🔥 NEW: Thêm timestamp để force re-compute
+  const lastUpdate = ref(Date.now())
+
   async function refreshInstances() {
     allInstances.value = []
 
@@ -25,6 +28,9 @@ export const useDeviceStore = defineStore('device', () => {
         }
       }
     }
+
+    // 🔥 Trigger update
+    lastUpdate.value = Date.now()
   }
 
   // Fetch tất cả thiết bị
@@ -59,7 +65,7 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
-  // 🔥 FIXED: Fetch models theo category và instances của chúng (LUÔN FETCH MỚI)
+  // 🔥 UPDATED: Fetch models theo category và instances của chúng
   async function fetchModelsByCategory(categoryId) {
     try {
       console.log(`🔄 Fetching models cho category ${categoryId}...`)
@@ -111,6 +117,9 @@ export const useDeviceStore = defineStore('device', () => {
       }
       console.log('📊 Phân loại instances:', statusCount)
 
+      // 🔥 NEW: Trigger update để force re-compute
+      lastUpdate.value = Date.now()
+
       return modelsByCategory.value[categoryId]
     } catch (err) {
       console.error('Lỗi tải models:', err)
@@ -119,8 +128,31 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
+  // 🔥 NEW: Hàm refresh toàn bộ data (dùng cho Dashboard)
+  async function refreshAllData() {
+    console.log('🔄 Refreshing all data...')
+
+    // Reset allInstances
+    allInstances.value = []
+
+    // Fetch lại categories
+    await fetchCategories()
+
+    // Fetch lại models và instances cho từng category
+    for (const category of categories.value) {
+      await fetchModelsByCategory(category.id)
+    }
+
+    // Trigger update
+    lastUpdate.value = Date.now()
+    console.log('✅ Refresh complete!')
+  }
+
   // Tính toán stats từ instances
   const stats = computed(() => {
+    // 🔥 Sử dụng lastUpdate để force re-compute
+    const _ = lastUpdate.value // Không dùng, chỉ để trigger reactivity
+
     let total = 0
     let available = 0
     let borrowed = 0
@@ -178,9 +210,11 @@ export const useDeviceStore = defineStore('device', () => {
     error,
     stats,
     categoriesStats,
+    lastUpdate, // 🔥 Export để có thể watch
     fetchDevices,
     fetchCategories,
     fetchModelsByCategory,
     refreshInstances,
+    refreshAllData, // 🔥 NEW: Export hàm refresh tổng
   }
 })
