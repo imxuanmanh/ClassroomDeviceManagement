@@ -33,71 +33,72 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, onMounted, watch } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { useRouter, useRoute } from "vue-router";
 
-const auth = useAuthStore()
-const router = useRouter()
-const route = useRoute()
+const auth = useAuthStore();
+const router = useRouter();
+const route = useRoute();
 
-const isAdmin = computed(() => auth.roleId === 1)
+const isAdmin = computed(() => auth.roleId === 1);
 
 const loginLabel = computed(() =>
-  auth.fullname && auth.fullname.trim() !== '' ? auth.fullname : 'Người dùng',
-)
+  auth.fullname && auth.fullname.trim() !== "" ? auth.fullname : "Người dùng"
+);
 
 const menu = computed(() => {
   if (isAdmin.value) {
     return [
       {
-        title: 'TỔNG QUAN',
-        items: [{ to: '/dashboard', icon: 'analytics', label: 'Bảng điều khiển' }],
-      },
-      {
-        title: 'QUẢN LÝ',
+        title: "TỔNG QUAN",
         items: [
-          { to: '/devices', icon: 'devices', label: 'Thiết bị' },
-          { to: '/users', icon: 'person', label: 'Người dùng' },
+          { to: "/dashboard", icon: "analytics", label: "Bảng điều khiển" },
         ],
       },
       {
-        title: 'THEO DÕI',
+        title: "QUẢN LÝ",
         items: [
-          { to: '/history', icon: 'history', label: 'Lịch sử' },
-          { to: '/reports', icon: 'bar_chart', label: 'Báo cáo hư hỏng' },
-          { to: '/requests', icon: 'assignment', label: 'Yêu cầu' },
+          { to: "/devices", icon: "devices", label: "Thiết bị" },
+          { to: "/users", icon: "person", label: "Người dùng" },
         ],
       },
-    ]
+      {
+        title: "THEO DÕI",
+        items: [
+          { to: "/reports", icon: "bar_chart", label: "Báo cáo hư hỏng" },
+          { to: "/requests", icon: "assignment", label: "Yêu cầu" },
+        ],
+      },
+    ];
   } else {
     return [
       {
-        title: 'THIẾT BỊ CỦA TÔI',
-        items: [{ to: '/devices', icon: 'devices', label: 'Thiết bị' }],
+        title: "THIẾT BỊ CỦA TÔI",
+        items: [{ to: "/devices", icon: "devices", label: "Thiết bị" }],
       },
       {
-        title: '',
-        items: [{ to: '/history-user', icon: 'history', label: 'Lịch sử' }],
+        title: "",
+        items: [{ to: "/history-user", icon: "history", label: "Lịch sử" }],
       },
-    ]
+    ];
   }
-})
+});
 
 function isActive(path) {
-  return route.path === path
+  return route.path === path;
 }
 
 function handleItemClick(path) {
-  router.push(path)
+  router.push(path);
 }
 
 watch(
   () => route.path,
-  () => {},
-)
+  () => {}
+);
 
-onMounted(() => {})
+onMounted(() => {});
 </script>
 
 <style scoped>
@@ -108,7 +109,7 @@ onMounted(() => {})
   width: 280px;
   display: flex;
   flex-direction: column;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   box-shadow: 4px 0 30px rgba(0, 239, 255, 0.2);
   position: relative;
   overflow: hidden;
@@ -117,15 +118,23 @@ onMounted(() => {})
 
 /* Animated background effect */
 .sidebar::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(circle at 10% 20%, rgba(0, 239, 255, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 90% 80%, rgba(0, 239, 255, 0.05) 0%, transparent 50%);
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(0, 239, 255, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(0, 239, 255, 0.05) 0%,
+      transparent 50%
+    );
   pointer-events: none;
   animation: bg-pulse 8s ease-in-out infinite;
 }
@@ -301,7 +310,12 @@ onMounted(() => {})
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 239, 255, 0.1) 50%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 239, 255, 0.1) 50%,
+    transparent 100%
+  );
   transition: left 0.5s ease;
   z-index: 1;
 }
@@ -327,7 +341,11 @@ onMounted(() => {})
 
 /* Active state */
 .item.active {
-  background: linear-gradient(135deg, rgba(0, 239, 255, 0.15) 0%, rgba(0, 239, 255, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 239, 255, 0.15) 0%,
+    rgba(0, 239, 255, 0.08) 100%
+  );
   border-left: 3px solid #0ef;
   box-shadow:
     inset 0 0 20px rgba(0, 239, 255, 0.1),

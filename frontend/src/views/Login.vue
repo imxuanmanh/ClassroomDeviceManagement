@@ -6,19 +6,31 @@
         <h2>Đăng nhập</h2>
         <form @submit.prevent="onSubmit">
           <div class="input-box">
-            <input type="text" v-model="username" required />
+            <input
+              type="text"
+              v-model="username"
+              required
+              :class="{ 'has-val': username }"
+            />
             <label>Tên đăng nhập</label>
             <i class="bx bxs-user"></i>
           </div>
+
           <div class="input-box">
-            <input type="password" v-model="password" required />
+            <input
+              type="password"
+              v-model="password"
+              required
+              :class="{ 'has-val': password }"
+            />
             <label>Mật khẩu</label>
             <i class="bx bxs-lock"></i>
           </div>
 
-          <!-- Thay đổi: Thêm container để đặt nút và loading cạnh nhau -->
           <div class="button-container">
-            <button type="submit" class="btn" :disabled="isLoading">Đăng nhập</button>
+            <button type="submit" class="btn" :disabled="isLoading">
+              Đăng nhập
+            </button>
             <div v-if="isLoading" class="ring-loader"></div>
           </div>
         </form>
@@ -26,7 +38,6 @@
       <div class="info-text login">
         <h2>Quản lý Thiết bị phòng học</h2>
 
-        <!-- Thêm 3 icon cử động -->
         <div class="feature-icons">
           <div class="feature-icon" style="animation-delay: 0s">
             <i class="bx bx-chalkboard"></i>
@@ -44,54 +55,83 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth.js'
-import { authApi } from '@/config/api'
+import { ref } from "vue"; // ❌ BỎ onMounted
+import { useRouter, useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/auth.js";
+import { authApi } from "@/config/api"; // Kiểm tra lại đường dẫn import api của bạn
+import { toast } from "@/utils/toast.js";
 
-const username = ref('')
-const password = ref('')
-const router = useRouter()
-const route = useRoute()
-const auth = useAuthStore()
-const isLoading = ref(false)
+const username = ref("");
+const password = ref("");
+const router = useRouter();
+const route = useRoute();
+const auth = useAuthStore();
+const isLoading = ref(false);
+
+// ❌ ĐÃ XÓA ĐOẠN onMounted() GÂY XUNG ĐỘT
 
 async function onSubmit() {
-  isLoading.value = true
+  if (isLoading.value) return;
+
+  isLoading.value = true;
+  console.log("🔐 Đang đăng nhập...");
 
   try {
     const res = await authApi.login({
       username: username.value,
       password: password.value,
-    })
+    });
 
-    if (res && res.token && res.user) {
-      auth.login(res.token, res.user)
-      const redirect = route.query.redirect
-      if (redirect) router.replace(String(redirect))
-      else if (res.user.roleId === 1) router.replace('/devices')
-      else router.replace('/user-borrow')
+    // Kiểm tra cấu trúc response trả về từ server
+    if (res && res.token) {
+      // API của bạn có thể trả về res.user hoặc nằm lồng trong res.data.user
+      // Hãy log res ra để chắc chắn cấu trúc object
+      const user = res.user || {
+        userId: res.userId,
+        roleId: res.roleId,
+        fullname: res.fullName,
+        username: username.value,
+      };
+
+      // Lưu vào Pinia Store (Store sẽ tự lưu xuống LocalStorage)
+      auth.login(res.token, user);
+
+      toast.success("Đăng nhập thành công!");
+
+      // Đợi store cập nhật state
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Redirect
+      const redirect = route.query.redirect;
+      if (redirect) {
+        router.replace(String(redirect));
+      } else if (Number(user.roleId) === 1) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/user-borrow");
+      }
     } else {
-      alert('Sai tài khoản hoặc mật khẩu!')
+      toast.error("Sai tài khoản hoặc mật khẩu!");
     }
   } catch (err) {
-    console.error(err)
-    alert('Đăng nhập thất bại!')
+    console.error(err);
+    toast.error("Lỗi kết nối hoặc sai thông tin!");
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
+/* GIỮ NGUYÊN TOÀN BỘ CSS CŨ */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css");
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .login-page-container {
@@ -192,8 +232,11 @@ async function onSubmit() {
   transition: 0.5s;
 }
 
+/* ✅ ĐOẠN CODE ĐÃ SỬA */
 .input-box input:focus ~ label,
-.input-box input:valid ~ label {
+.input-box input:valid ~ label,
+.input-box input.has-val ~ label,      /* Trường hợp có dữ liệu từ Vue */
+.input-box input:-webkit-autofill ~ label /* Trường hợp Autofill của Chrome */ {
   top: -5px;
   color: #0ef;
 }
@@ -213,7 +256,6 @@ async function onSubmit() {
   color: #0ef;
 }
 
-/* Container mới để đặt button và loader cạnh nhau */
 .button-container {
   display: flex;
   align-items: center;
@@ -222,7 +264,7 @@ async function onSubmit() {
 
 .btn {
   position: relative;
-  flex: 1; /* Cho nút chiếm phần còn lại của container */
+  flex: 1;
   height: 45px;
   background: transparent;
   border: 2px solid #0ef;
@@ -242,7 +284,7 @@ async function onSubmit() {
 }
 
 .btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -100%;
   left: 0;
@@ -255,23 +297,6 @@ async function onSubmit() {
 
 .btn:hover:not(:disabled)::before {
   top: 0;
-}
-
-.form-box .logreg-link {
-  font-size: 14.5px;
-  color: #fff;
-  text-align: center;
-  margin: 20px 0 10px;
-}
-
-.logreg-link p a {
-  color: #0ef;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.logreg-link p a:hover {
-  text-decoration: underline;
 }
 
 .warrper .info-text {
@@ -297,11 +322,6 @@ async function onSubmit() {
   text-transform: uppercase;
 }
 
-.info-text p {
-  font-size: 16px;
-  color: #fff;
-}
-
 .warrper .bg-animate {
   position: absolute;
   top: -4px;
@@ -314,7 +334,6 @@ async function onSubmit() {
   transform-origin: bottom right;
 }
 
-/* Loader nằm bên cạnh nút */
 .ring-loader {
   width: 30px;
   height: 30px;
@@ -322,7 +341,7 @@ async function onSubmit() {
   border: 4px solid #46dff0;
   border-top-color: #081b29;
   animation: spin 1s linear infinite;
-  flex-shrink: 0; /* Không cho loader bị co lại */
+  flex-shrink: 0;
 }
 
 @keyframes spin {
@@ -331,7 +350,6 @@ async function onSubmit() {
   }
 }
 
-/* ===== THÊM MỚI: Feature Icons (3 icon cử động) ===== */
 .feature-icons {
   display: flex;
   gap: 20px;
@@ -362,7 +380,6 @@ async function onSubmit() {
   border-width: 3px;
 }
 
-/* Animation bay lên xuống */
 @keyframes float {
   0%,
   100% {

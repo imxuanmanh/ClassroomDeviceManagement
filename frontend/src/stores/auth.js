@@ -1,62 +1,77 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia";
 
-export const useAuthStore = defineStore('auth', {
+// ❌ SỬA 1: TẮT CHẾ ĐỘ DEV ĐỂ TRÁNH LOGIN ẢO
+const DEV_BYPASS_LOGIN = false;
+
+export const useAuthStore = defineStore("auth", {
   state: () => ({
-    // token: localStorage.getItem('token') || null,
-    // userId: Number(localStorage.getItem('userId')) || null, // ✅ thêm dòng này
-    // roleId: Number(localStorage.getItem('roleId')) || null,
-    // fullname: localStorage.getItem('fullname') || null,
-    // username: localStorage.getItem('username') || null,
-
-    //Đây là nơi mà bỏ qua phần đăng nhập mà vào trang web được luôn
-    token: localStorage.getItem('token') || 'DEV_ADMIN_TOKEN', // <-- Ép 1 token giả
-    userId: Number(localStorage.getItem('userId')) || 1, // <-- Ép 1 ID giả
-    roleId: Number(localStorage.getItem('roleId')) || 1, // <-- Ép roleId = 1 (Admin)
-    fullname: localStorage.getItem('fullname') || 'Admin (Dev Mode)',
-    username: localStorage.getItem('username') || 'admin_dev',
+    // ❌ SỬA 2: ĐỔI "token" THÀNH "authToken" ĐỂ KHỚP VỚI API.JS
+    token:
+      localStorage.getItem("authToken") ||
+      (DEV_BYPASS_LOGIN ? "DEV_ADMIN_TOKEN" : null),
+    userId:
+      Number(localStorage.getItem("userId")) || (DEV_BYPASS_LOGIN ? 1 : null),
+    roleId:
+      Number(localStorage.getItem("roleId")) || (DEV_BYPASS_LOGIN ? 1 : null),
+    fullname:
+      localStorage.getItem("fullname") ||
+      (DEV_BYPASS_LOGIN ? "Admin Dev" : null),
+    username:
+      localStorage.getItem("username") || (DEV_BYPASS_LOGIN ? "admin" : null),
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => {
+      const hasToken = !!state.token;
+      return hasToken;
+    },
+
     roleName: (state) => {
       switch (state.roleId) {
         case 1:
-          return 'Admin'
+          return "Admin";
         case 2:
-          return 'User'
+          return "User";
+        case 3:
+          return "Guest";
         default:
-          return 'Guest'
+          return "Unknown";
       }
     },
   },
 
   actions: {
     login(token, user) {
-      this.token = token
-      this.userId = user.userId // ✅ thêm dòng này
-      this.roleId = user.roleId
-      this.username = user.username
-      this.fullname = user.fullname
+      this.token = token;
+      this.userId = user.userId;
+      this.roleId = user.roleId;
+      this.username = user.username;
+      this.fullname = user.fullname; // Lưu ý check xem API trả về fullName hay fullname
 
-      localStorage.setItem('token', token)
-      localStorage.setItem('userId', user.userId) // ✅ thêm dòng này
-      localStorage.setItem('roleId', user.roleId)
-      localStorage.setItem('username', user.username)
-      localStorage.setItem('fullname', user.fullname)
+      // ❌ SỬA 3: LƯU KEY LÀ "authToken"
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userId", String(user.userId));
+      localStorage.setItem("roleId", String(user.roleId));
+      localStorage.setItem("username", user.username);
+      localStorage.setItem("fullname", user.fullname);
     },
 
     logout() {
-      this.token = null
-      this.userId = null // ✅ thêm dòng này
-      this.roleId = null
-      this.username = null
-      this.fullname = null
+      this.token = null;
+      this.userId = null;
+      this.roleId = null;
+      this.username = null;
+      this.fullname = null;
 
-      localStorage.removeItem('token')
-      localStorage.removeItem('userId') // ✅ thêm dòng này
-      localStorage.removeItem('roleId')
-      localStorage.removeItem('username')
-      localStorage.removeItem('fullname')
+      // ❌ SỬA 4: XÓA ĐÚNG KEY
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("roleId");
+      localStorage.removeItem("username");
+      localStorage.removeItem("fullname");
+
+      // Force reload để xóa sạch state
+      window.location.href = "/login";
     },
   },
-})
+});

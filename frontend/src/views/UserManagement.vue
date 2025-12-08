@@ -35,7 +35,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { userApi, authApi } from '@/config/apiWrapper.js'
-import UserFormModal from '@/components/UserFormModal.vue'
+import UserFormModal from '@/components/Device/UserFormModal.vue'
 import { useAuthStore } from '@/stores/auth'
 // 👇 Import Toast Utility
 import { toast } from '@/utils/toast.js'

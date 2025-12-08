@@ -8,11 +8,18 @@
     </div>
 
     <div class="header-right">
-      <div class="notification-wrapper">
-        <button class="notification-btn" aria-label="Notifications" @click="toggleNotification">
-          <img src="@/components/icons/notification-bell.png" alt="Notifications" />
+      <div class="notification-wrapper" ref="notificationRef">
+        <button
+          class="notification-btn"
+          aria-label="Notifications"
+          @click="toggleNotification"
+        >
+          <img
+            src="@/components/icons/notification-bell.png"
+            alt="Notifications"
+          />
           <span v-if="unreadCount > 0" class="notification-badge">
-            {{ unreadCount > 99 ? '99+' : unreadCount }}
+            {{ unreadCount > 99 ? "99+" : unreadCount }}
           </span>
         </button>
 
@@ -20,7 +27,11 @@
           <div class="notification-header">
             <h3>Thông báo</h3>
             <div class="notification-actions">
-              <button @click="markAllAsRead" class="mark-read-btn" title="Đánh dấu đã đọc tất cả">
+              <button
+                @click="markAllAsRead"
+                class="mark-read-btn"
+                title="Đánh dấu đã đọc tất cả"
+              >
                 <span class="material-icons">done</span>
               </button>
               <button
@@ -34,38 +45,47 @@
           </div>
           <div class="notification-content">
             <div v-if="notifications.length === 0" class="no-notifications">
-              Bạn không có thông báo
+              <img
+                src="@/components/icons/bell-sleep.png"
+                alt="No notifications"
+              />
+              <p>Không có thông báo mới</p>
             </div>
-            <div v-else class="notification-list">
-              <div
-                v-for="(notif, index) in notifications"
-                :key="index"
+
+            <ul v-else class="notification-list">
+              <li
+                v-for="item in notifications"
+                :key="item.id"
                 class="notification-item"
-                :class="{ 'notification-read': notif.isRead }"
+                :class="{ 'notification-read': item.isRead }"
+                @click="onNotificationClick(item)"
               >
-                <span class="material-icons notif-icon">info</span>
-                <div class="notif-text">
-                  <p>{{ notif.message }}</p>
-                  <small v-if="notif.time">{{ notif.time }}</small>
+                <div class="notif-icon">
+                  <i class="bx bx-bell"></i>
                 </div>
-              </div>
-            </div>
+                <div class="notif-text">
+                  <p>{{ item.message }}</p>
+                  <small>{{ item.time }}</small>
+                </div>
+                <span v-if="!item.isRead" class="status-dot"></span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
 
-      <div class="profile" @click="toggleDropdown">
+      <div class="profile" @click="toggleDropdown" ref="profileRef">
         <img src="/src/components/icons/logo.png" alt="avatar" class="avatar" />
-        <span>{{ auth.fullname || 'Admin' }}</span>
+        <span>{{ auth.fullname || "Admin" }}</span>
         <span class="material-icons">expand_more</span>
 
         <div v-if="dropdownOpen" class="dropdown">
-          <button @click="goProfile">
-            <span class="material-icons">person</span>
-            Hồ sơ
-          </button>
-          <button @click="handleLogout">
-            <img src="@/components/icons/logout-static.png" alt="Logout" class="dropdown-icon" />
+          <button @click="handleLogout" class="logout-btn">
+            <img
+              src="@/components/icons/logout-static.png"
+              alt="Logout"
+              class="dropdown-icon"
+            />
             Đăng xuất
           </button>
         </div>
@@ -75,33 +95,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { notificationApi, userApi } from '@/config/api'
-import { useSSE } from '@/composables/useSSE'
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { notificationApi, userApi, authApi } from "@/config/api";
+import { useSSE } from "@/composables/useSSE";
 
-const auth = useAuthStore()
-const router = useRouter()
-const dropdownOpen = ref(false)
-const notificationOpen = ref(false)
+const auth = useAuthStore();
+const router = useRouter();
+const dropdownOpen = ref(false);
+const notificationOpen = ref(false);
 
-const notifications = ref([])
+// Refs cho click outside
+const profileRef = ref(null);
+const notificationRef = ref(null);
+
+const notifications = ref([]);
 
 // --- CHUẨN BỊ URL VÀ SSE ---
+
 const getUserId = () => {
-  const storedAuthStr = localStorage.getItem('auth')
-  let uid = auth.userId
-  if (!uid && storedAuthStr) {
-    const storedAuth = JSON.parse(storedAuthStr)
-    uid = storedAuth.userId
-  }
-  return uid
-}
+  if (auth.userId) return auth.userId;
+  return localStorage.getItem("userId");
+};
 
-const userId = getUserId()
-const sseUrl = userId ? notificationApi.getStreamUrl(userId) : ''
+const userId = getUserId();
+const sseUrl = userId ? notificationApi.getStreamUrl(userId) : "";
 
+// Khởi tạo SSE
 const {
   data: sseData,
   connect: connectSSE,
@@ -109,109 +130,148 @@ const {
 } = useSSE(sseUrl, {
   autoConnect: false,
   reconnect: true,
-})
+});
 
 // --- LOGIC XỬ LÝ DỮ LIỆU ---
 
-// 1. Theo dõi dữ liệu mới từ SSE
 watch(sseData, (newVal) => {
-  if (newVal && !newVal.deleted) {
-    const newNotif = {
-      id: newVal.id,
-      message: newVal.content,
-      isRead: !!newVal.seen,
-      time: new Date().toLocaleTimeString(),
+  if (!newVal) return;
+
+  const incomingItems = Array.isArray(newVal) ? newVal : [newVal];
+
+  incomingItems.forEach((item) => {
+    if (item && !item.deleted) {
+      const newNotif = {
+        id: item.id,
+        message: item.content,
+        isRead: !!item.seen,
+        time: new Date().toLocaleTimeString(),
+      };
+
+      notifications.value.unshift(newNotif);
+
+      // ✅ ĐÃ SỬA: Không được tự tăng unreadCount ở đây vì nó là computed
     }
-    notifications.value.unshift(newNotif)
-  }
-})
+  });
+});
 
 // 2. Lấy thông báo cũ từ API (HTTP GET)
 const fetchOldNotifications = async () => {
-  if (!userId) return
+  if (!userId) return;
   try {
-    const result = await userApi.getNotifications(userId)
-    const rawData = Array.isArray(result) ? result : result.data || []
+    const result = await userApi.getNotifications(userId);
+    const rawData = Array.isArray(result) ? result : result.data || [];
 
     notifications.value = rawData.map((item) => ({
+      id: item.id, // ✅ Bổ sung thêm ID để click hoạt động
       message: item.content,
-      time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : '',
-      isRead: item.isRead ?? false,
-    }))
+      time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : "",
+      isRead: item.isRead ?? item.seen ?? false, // Map cả trường seen nếu backend trả về
+    }));
   } catch (error) {
-    console.error('Lỗi tải thông báo cũ:', error)
+    console.error("Lỗi tải thông báo cũ:", error);
   }
-}
+};
 
 // 3. Xử lý nút TICK (Đánh dấu đã đọc tất cả)
 async function markAllAsRead() {
-  if (!userId) return
+  if (!userId) return;
 
   // Cập nhật UI
   notifications.value.forEach((notif) => {
-    notif.isRead = true
-  })
+    notif.isRead = true;
+  });
 
   // Gọi API
   try {
-    await userApi.markAllSeen(userId)
+    await userApi.markAllSeen(userId);
   } catch (error) {
-    console.error('Lỗi khi đánh dấu đã đọc:', error)
+    console.error("Lỗi khi đánh dấu đã đọc:", error);
   }
 }
 
+// ✅ ĐÃ SỬA HÀM NÀY
+const onNotificationClick = async (item) => {
+  console.log("🖱️ Click thông báo ID:", item.id);
+  // Nếu đã đọc rồi thì thôi
+  if (item.isRead) return;
+
+  // 1. Cập nhật giao diện (Vue tự tính lại unreadCount)
+  item.isRead = true;
+
+  // 2. Gọi API để lưu xuống Database
+  try {
+    await notificationApi.markAsRead(item.id);
+    console.log(`✅ Đã đọc thông báo: ${item.id}`);
+  } catch (error) {
+    console.error("❌ Lỗi lưu trạng thái đọc:", error);
+  }
+};
+
 // 4. Xử lý nút X (Xóa tất cả thông báo)
 async function deleteAllNotifications() {
-  if (!userId) return
+  if (!userId) return;
 
-  const oldNotifications = [...notifications.value]
-  notifications.value = []
+  const oldNotifications = [...notifications.value];
+  notifications.value = [];
 
   try {
-    await userApi.deleteAllNotifications(userId)
+    await userApi.deleteAllNotifications(userId);
   } catch (error) {
-    console.error('Lỗi khi xóa thông báo:', error)
-    notifications.value = oldNotifications
-    alert('Không thể xóa thông báo. Vui lòng kiểm tra kết nối mạng.')
+    console.error("Lỗi khi xóa thông báo:", error);
+    notifications.value = oldNotifications;
+    alert("Không thể xóa thông báo. Vui lòng kiểm tra kết nối mạng.");
+  }
+}
+
+// --- XỬ LÝ CLICK OUTSIDE ---
+function handleClickOutside(event) {
+  if (profileRef.value && !profileRef.value.contains(event.target)) {
+    dropdownOpen.value = false;
+  }
+  if (notificationRef.value && !notificationRef.value.contains(event.target)) {
+    notificationOpen.value = false;
   }
 }
 
 // --- LIFECYCLE ---
 onMounted(() => {
   if (userId) {
-    fetchOldNotifications()
-    connectSSE()
+    fetchOldNotifications();
+    connectSSE();
   }
-})
+  document.addEventListener("click", handleClickOutside);
+});
 
-// Computed
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// Computed tự động đếm số chưa đọc
 const unreadCount = computed(() => {
-  return notifications.value.filter((notif) => notif.isRead === false).length
-})
+  return notifications.value.filter((notif) => notif.isRead === false).length;
+});
 
 // --- CÁC HÀM SỰ KIỆN KHÁC ---
-function toggleDropdown() {
-  dropdownOpen.value = !dropdownOpen.value
-  notificationOpen.value = false
+function toggleDropdown(event) {
+  event.stopPropagation();
+  dropdownOpen.value = !dropdownOpen.value;
+  notificationOpen.value = false;
 }
 
-function toggleNotification() {
-  notificationOpen.value = !notificationOpen.value
-  dropdownOpen.value = false
-}
-
-function goProfile() {
-  router.push('/profile')
-  dropdownOpen.value = false
+function toggleNotification(event) {
+  event.stopPropagation();
+  notificationOpen.value = !notificationOpen.value;
+  dropdownOpen.value = false;
 }
 
 function handleLogout() {
-  auth.logout()
-  router.replace('/login')
+  authApi.logout();
 }
 </script>
 
 <style scoped>
+/* GIỮ NGUYÊN CSS CŨ CỦA BẠN */
 .header {
   display: flex;
   justify-content: space-between;
@@ -227,13 +287,19 @@ function handleLogout() {
 }
 
 .header::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #0ef 20%, #0ef 80%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #0ef 20%,
+    #0ef 80%,
+    transparent 100%
+  );
   box-shadow: 0 0 10px rgba(0, 239, 255, 0.5);
 }
 
@@ -570,10 +636,11 @@ function handleLogout() {
   padding: 14px 20px;
   border-bottom: 1px solid rgba(0, 239, 255, 0.1);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .notification-item:hover {
-  background: rgba(0, 239, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .notification-item:last-child {

@@ -28,7 +28,11 @@
       </div>
 
       <div v-else class="reports-list">
-        <div v-for="report in filteredReports" :key="report.reportId" class="report-card">
+        <div
+          v-for="report in filteredReports"
+          :key="report.reportId"
+          class="report-card"
+        >
           <div class="report-body">
             <div class="report-date">{{ formatDate(report.createdDate) }}</div>
             <div class="report-info">
@@ -40,7 +44,10 @@
               <div v-if="report.image" class="image-section">
                 <p><strong>Hình ảnh:</strong></p>
                 <div class="image-container">
-                  <button class="btn btn-view-detail" @click="viewImageDetail(report)">
+                  <button
+                    class="btn btn-view-detail"
+                    @click="viewImageDetail(report)"
+                  >
                     Xem ảnh
                   </button>
                 </div>
@@ -92,7 +99,11 @@
           <button class="modal-close" @click="closeImageModal">✕</button>
         </div>
         <div class="modal-body" v-if="selectedReport">
-          <img :src="selectedReport.image" alt="Report image" class="modal-image" />
+          <img
+            :src="selectedReport.image"
+            alt="Report image"
+            class="modal-image"
+          />
         </div>
       </div>
     </div>
@@ -100,56 +111,59 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { reportApi } from '@/config/apiWrapper.js'
-import { API_CONFIG } from '@/config/api.js'
+import { ref, computed, onMounted } from "vue";
+//import { reportApi } from '@/config/apiWrapper.js'
+import { reportApi, API_CONFIG } from "@/config/api.js";
 // 👇 Import bộ Toast vừa tạo
-import { toast } from '@/utils/toast.js'
+import { toast } from "@/utils/toast.js";
 
 export default {
-  name: 'ReportManagement',
+  name: "ReportManagement",
   setup() {
-    const activeTab = ref('pending')
-    const showImageModal = ref(false)
-    const selectedReport = ref(null)
-    const loading = ref(false)
+    const activeTab = ref("pending");
+    const showImageModal = ref(false);
+    const selectedReport = ref(null);
+    const loading = ref(false);
 
     const tabs = [
-      { status: 'pending', label: 'Đang chờ xử lý', statusId: 1 },
-      { status: 'processing', label: 'Đang xử lý', statusId: 2 },
-      { status: 'completed', label: 'Đã hoàn thành', statusId: 3 },
-    ]
+      { status: "pending", label: "Đang chờ xử lý", statusId: 1 },
+      { status: "processing", label: "Đang xử lý", statusId: 2 },
+      { status: "completed", label: "Đã hoàn thành", statusId: 3 },
+    ];
 
-    const reports = ref([])
-    const reportsByStatus = ref({ 1: [], 2: [], 3: [] })
+    const reports = ref([]);
+    const reportsByStatus = ref({ 1: [], 2: [], 3: [] });
 
     // ... (Giữ nguyên logic mapStatusIdToStatus, formatDate, getReportCount, helper...)
     const mapStatusIdToStatus = (id) =>
-      ({ 1: 'pending', 2: 'processing', 3: 'completed' })[id] || 'pending'
+      ({ 1: "pending", 2: "processing", 3: "completed" })[id] || "pending";
 
     const getReportCount = (status) => {
-      const map = { pending: 1, processing: 2, completed: 3 }
-      return reportsByStatus.value[map[status]]?.length || 0
-    }
+      const map = { pending: 1, processing: 2, completed: 3 };
+      return reportsByStatus.value[map[status]]?.length || 0;
+    };
 
-    const formatDate = (date) => (date ? new Date(date).toLocaleDateString('vi-VN') : '')
+    const formatDate = (date) =>
+      date ? new Date(date).toLocaleDateString("vi-VN") : "";
 
     // Hàm remove local helper
     const removeReportFromLocal = (statusId, reportId) => {
-      const idx = reportsByStatus.value[statusId].findIndex((r) => r.reportId === reportId)
-      if (idx !== -1) reportsByStatus.value[statusId].splice(idx, 1)
+      const idx = reportsByStatus.value[statusId].findIndex(
+        (r) => r.reportId === reportId
+      );
+      if (idx !== -1) reportsByStatus.value[statusId].splice(idx, 1);
 
       if (activeTab.value === mapStatusIdToStatus(statusId)) {
-        const vIdx = reports.value.findIndex((r) => r.reportId === reportId)
-        if (vIdx !== -1) reports.value.splice(vIdx, 1)
+        const vIdx = reports.value.findIndex((r) => r.reportId === reportId);
+        if (vIdx !== -1) reports.value.splice(vIdx, 1);
       }
-    }
+    };
 
     // Fetch Data
     const fetchReportsForTab = async (statusId) => {
       try {
-        const data = await reportApi.getByStatus(statusId)
-        const baseUrlWithoutApi = API_CONFIG.BASE_URL.replace('/api', '')
+        const data = await reportApi.getByStatus(statusId);
+        const baseUrlWithoutApi = API_CONFIG.BASE_URL.replace("/api", "");
 
         const transformedData = data.map((item) => ({
           reportId: item.reportId,
@@ -158,98 +172,100 @@ export default {
           deviceName: item.deviceName,
           description: item.description,
           image: item.imagePath
-            ? item.imagePath.startsWith('http')
+            ? item.imagePath.startsWith("http")
               ? item.imagePath
               : `${baseUrlWithoutApi}${item.imagePath}`
             : null,
-          createdDate: item.reportDate ? new Date(item.reportDate).toISOString().split('T')[0] : '',
-        }))
+          createdDate: item.reportDate
+            ? new Date(item.reportDate).toISOString().split("T")[0]
+            : "",
+        }));
 
-        reportsByStatus.value[statusId] = transformedData
+        reportsByStatus.value[statusId] = transformedData;
 
-        const currentMap = { pending: 1, processing: 2, completed: 3 }
+        const currentMap = { pending: 1, processing: 2, completed: 3 };
         if (currentMap[activeTab.value] === statusId) {
-          reports.value = transformedData
+          reports.value = transformedData;
         }
       } catch (error) {
-        console.error(error)
-        reportsByStatus.value[statusId] = []
+        console.error(error);
+        reportsByStatus.value[statusId] = [];
       }
-    }
+    };
 
     // --- CẬP NHẬT TRẠNG THÁI (Dùng Toast) ---
     const updateReportStatus = async (reportId, newStatus) => {
       try {
-        if (activeTab.value === 'pending') {
-          await reportApi.processReport(reportId)
-          removeReportFromLocal(1, reportId)
-          fetchReportsForTab(2)
+        if (activeTab.value === "pending") {
+          await reportApi.processReport(reportId);
+          removeReportFromLocal(1, reportId);
+          fetchReportsForTab(2);
 
           // 🔥 Toast Thành công
-          toast.success('Đã chuyển sang trạng thái đang xử lý!')
-        } else if (activeTab.value === 'processing') {
-          const isSuccess = newStatus !== 'failed'
-          await reportApi.completeReport(reportId, isSuccess)
-          removeReportFromLocal(2, reportId)
-          if (isSuccess) fetchReportsForTab(3)
+          toast.success("Đã chuyển sang trạng thái đang xử lý!");
+        } else if (activeTab.value === "processing") {
+          const isSuccess = newStatus !== "failed";
+          await reportApi.completeReport(reportId, isSuccess);
+          removeReportFromLocal(2, reportId);
+          if (isSuccess) fetchReportsForTab(3);
 
           // 🔥 Toast tùy biến
           if (isSuccess) {
-            toast.success('Báo cáo đã hoàn thành!')
+            toast.success("Báo cáo đã hoàn thành!");
           } else {
-            toast.warning('Đã xác nhận không thể xử lý!')
+            toast.warning("Đã xác nhận không thể xử lý!");
           }
         }
       } catch (error) {
-        console.error(error)
+        console.error(error);
         // 🔥 Toast Lỗi
-        toast.error('Có lỗi xảy ra, vui lòng thử lại.')
+        toast.error("Có lỗi xảy ra, vui lòng thử lại.");
       }
-    }
+    };
 
     // --- TỪ CHỐI (Dùng Confirm Dialog đẹp) ---
     const rejectReport = async (reportId) => {
       // 🔥 Hộp thoại xác nhận xịn xò
       const confirmed = await toast.confirm(
-        'Từ chối báo cáo?',
-        'Hành động này không thể hoàn tác.',
-        'Từ chối ngay',
-      )
+        "Từ chối báo cáo?",
+        "Hành động này không thể hoàn tác.",
+        "Từ chối ngay"
+      );
 
       if (confirmed) {
         try {
-          await reportApi.cancelReport(reportId)
-          removeReportFromLocal(1, reportId)
+          await reportApi.cancelReport(reportId);
+          removeReportFromLocal(1, reportId);
 
-          toast.success('Đã từ chối báo cáo.')
+          toast.success("Đã từ chối báo cáo.");
         } catch (error) {
-          toast.error('Lỗi khi từ chối báo cáo.')
+          toast.error("Lỗi khi từ chối báo cáo.");
         }
       }
-    }
+    };
 
     // --- Các hàm Modal ảnh giữ nguyên ---
     const viewImageDetail = (r) => {
-      selectedReport.value = r
-      showImageModal.value = true
-    }
+      selectedReport.value = r;
+      showImageModal.value = true;
+    };
     const closeImageModal = () => {
-      showImageModal.value = false
-      selectedReport.value = null
-    }
+      showImageModal.value = false;
+      selectedReport.value = null;
+    };
 
     const handleTabChange = (statusId) => {
-      activeTab.value = mapStatusIdToStatus(statusId)
-      reports.value = reportsByStatus.value[statusId] || []
-      fetchReportsForTab(statusId)
-    }
+      activeTab.value = mapStatusIdToStatus(statusId);
+      reports.value = reportsByStatus.value[statusId] || [];
+      fetchReportsForTab(statusId);
+    };
 
     onMounted(() => {
-      loading.value = true
+      loading.value = true;
       Promise.all([1, 2, 3].map((id) => fetchReportsForTab(id))).finally(
-        () => (loading.value = false),
-      )
-    })
+        () => (loading.value = false)
+      );
+    });
 
     return {
       activeTab,
@@ -266,9 +282,9 @@ export default {
       selectedReport,
       handleTabChange,
       loading,
-    }
+    };
   },
-}
+};
 </script>
 
 <!-- <script>

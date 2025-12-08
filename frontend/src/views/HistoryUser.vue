@@ -32,7 +32,12 @@
               <td>{{ req.location }}</td>
               <td>{{ req.purpose }}</td>
               <td>
-                <button class="reject-btn" @click="deletePending(req.requestId)">Xóa</button>
+                <button
+                  class="reject-btn"
+                  @click="deletePending(req.requestId)"
+                >
+                  Xóa
+                </button>
               </td>
             </tr>
           </tbody>
@@ -108,43 +113,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { userApi, borrowApi, reportApi } from '@/config/api.js'
-import ReportBrokenModal from '@/components/Device/ReportBrokenModal.vue'
+import { ref, onMounted, watch } from "vue";
+import { userApi, borrowApi, reportApi } from "@/config/api.js";
+import ReportBrokenModal from "@/components/Device/ReportBrokenModal.vue";
 // 👇 IMPORT TOAST
-import { toast } from '@/utils/toast.js'
+import { toast } from "@/utils/toast.js";
 
 // Tabs
-const tabs = ['Đang đợi', 'Đã chấp nhận', 'Bị từ chối']
-const activeTab = ref('Đang đợi')
+const tabs = ["Đang đợi", "Đã chấp nhận", "Bị từ chối"];
+const activeTab = ref("Đang đợi");
 
 // Data
-const pendingRequests = ref([])
-const acceptedRequests = ref([])
-const rejectedRequests = ref([])
+const pendingRequests = ref([]);
+const acceptedRequests = ref([]);
+const rejectedRequests = ref([]);
 
-const loading = ref(false)
+const loading = ref(false);
 
 // Modal state
-const showReportModal = ref(false)
+const showReportModal = ref(false);
 const selectedDevice = ref({
   requestId: null,
-  deviceName: '',
-  deviceCode: '',
-})
+  deviceName: "",
+  deviceCode: "",
+});
 
 /* ======================================================
    📌 HÀM LẤY DỮ LIỆU THEO TRẠNG THÁI
 ====================================================== */
 async function fetchRequestsByStatus(status) {
-  loading.value = true
+  loading.value = true;
 
   try {
-    const userId = localStorage.getItem('userId')
+    const userId = localStorage.getItem("userId");
 
     // ---- TAB Đang đợi ----
-    if (status === 'Đang đợi') {
-      const data = await userApi.getPendingRequests(userId)
+    if (status === "Đang đợi") {
+      const data = await userApi.getPendingRequests(userId);
       pendingRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
@@ -152,25 +157,25 @@ async function fetchRequestsByStatus(status) {
         endPeriod: item.endPeriod,
         location: item.usageLocation,
         purpose: item.purpose,
-      }))
-      return
+      }));
+      return;
     }
 
     // ---- TAB Đã chấp nhận ----
-    if (status === 'Đã chấp nhận') {
-      const data = await userApi.getApprovedRequests(userId)
+    if (status === "Đã chấp nhận") {
+      const data = await userApi.getApprovedRequests(userId);
       acceptedRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
         deviceCode: item.instanceCode,
         storageLocation: item.storageLocation,
-      }))
-      return
+      }));
+      return;
     }
 
     // ---- TAB Bị từ chối ----
-    if (status === 'Bị từ chối') {
-      const data = await userApi.getRejectedRequests(userId)
+    if (status === "Bị từ chối") {
+      const data = await userApi.getRejectedRequests(userId);
       rejectedRequests.value = data.map((item) => ({
         requestId: item.requestId,
         deviceName: item.deviceName,
@@ -179,24 +184,24 @@ async function fetchRequestsByStatus(status) {
         location: item.usageLocation,
         purpose: item.purpose,
         requestDate: item.requestDate,
-      }))
-      return
+      }));
+      return;
     }
   } catch (err) {
-    console.error('❌ Lỗi:', err)
+    console.error("❌ Lỗi:", err);
     // 🔥 Dùng toast báo lỗi
-    toast.error('Không thể tải dữ liệu lịch sử.')
+    toast.error("Không thể tải dữ liệu lịch sử.");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 /* ======================================================
    🧠 WATCH TAB CHANGE
 ====================================================== */
-watch(activeTab, (tab) => fetchRequestsByStatus(tab))
+watch(activeTab, (tab) => fetchRequestsByStatus(tab));
 
-onMounted(() => fetchRequestsByStatus(activeTab.value))
+onMounted(() => fetchRequestsByStatus(activeTab.value));
 
 /* ======================================================
    ❌ HÀM XÓA YÊU CẦU ĐANG ĐỢI (Đã sửa)
@@ -204,24 +209,26 @@ onMounted(() => fetchRequestsByStatus(activeTab.value))
 async function deletePending(requestId) {
   // 🔥 Dùng toast.confirm thay cho confirm()
   const confirmed = await toast.confirm(
-    'Xóa yêu cầu?',
-    'Bạn có chắc chắn muốn hủy yêu cầu mượn này?',
-    'Xóa ngay',
-  )
+    "Xóa yêu cầu?",
+    "Bạn có chắc chắn muốn hủy yêu cầu mượn này?",
+    "Xóa ngay"
+  );
 
-  if (!confirmed) return
+  if (!confirmed) return;
 
   try {
-    await borrowApi.delete(requestId)
+    await borrowApi.delete(requestId);
 
     // 🔥 Toast thành công
-    toast.success('Đã hủy yêu cầu thành công!')
+    toast.success("Đã hủy yêu cầu thành công!");
 
     // Cập nhật lại danh sách local
-    pendingRequests.value = pendingRequests.value.filter((req) => req.requestId !== requestId)
+    pendingRequests.value = pendingRequests.value.filter(
+      (req) => req.requestId !== requestId
+    );
   } catch (error) {
-    console.error('❌ Lỗi:', error)
-    toast.error('Không thể xoá yêu cầu! Vui lòng thử lại.')
+    console.error("❌ Lỗi:", error);
+    toast.error("Không thể xoá yêu cầu! Vui lòng thử lại.");
   }
 }
 
@@ -233,42 +240,42 @@ function openReportModal(device) {
     requestId: device.requestId,
     deviceName: device.deviceName,
     deviceCode: device.deviceCode,
-  }
-  showReportModal.value = true
+  };
+  showReportModal.value = true;
 }
 
 function closeReportModal() {
-  showReportModal.value = false
+  showReportModal.value = false;
 }
 
 async function handleReportSubmit(data) {
   try {
-    const userId = localStorage.getItem('userId')
+    const userId = localStorage.getItem("userId");
     if (!userId) {
-      toast.error('Lỗi xác thực: Không tìm thấy thông tin người dùng!')
-      return
+      toast.error("Lỗi xác thực: Không tìm thấy thông tin người dùng!");
+      return;
     }
 
-    const formData = new FormData()
-    formData.append('UserId', userId)
-    formData.append('InstanceId', data.requestId)
-    formData.append('Description', data.description)
-    formData.append('image', data.image)
+    const formData = new FormData();
+    formData.append("UserId", userId);
+    formData.append("InstanceId", data.requestId);
+    formData.append("Description", data.description);
+    formData.append("image", data.image);
 
-    const result = await reportApi.createBrokenReport(formData)
+    const result = await reportApi.createBrokenReport(formData);
 
     if (result.ok) {
       // 🔥 Toast thành công
-      toast.success(result.message || 'Gửi báo cáo hỏng thành công!')
-      fetchRequestsByStatus(activeTab.value)
-      closeReportModal() // Đóng modal nếu thành công (tùy chọn)
+      toast.success(result.message || "Gửi báo cáo hỏng thành công!");
+      fetchRequestsByStatus(activeTab.value);
+      closeReportModal(); // Đóng modal nếu thành công (tùy chọn)
     } else {
       // 🔥 Toast lỗi từ server
-      toast.error(result.message || 'Gửi báo cáo thất bại.')
+      toast.error(result.message || "Gửi báo cáo thất bại.");
     }
   } catch (error) {
-    console.error('❌ Lỗi:', error)
-    toast.error('Lỗi kết nối khi gửi báo cáo.')
+    console.error("❌ Lỗi:", error);
+    toast.error("Lỗi kết nối khi gửi báo cáo.");
   }
 }
 
@@ -276,12 +283,11 @@ async function handleReportSubmit(data) {
    🗓 FORMAT NGÀY
 ====================================================== */
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(
-    2,
-    '0',
-  )}/${d.getFullYear()}`
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(
+    d.getMonth() + 1
+  ).padStart(2, "0")}/${d.getFullYear()}`;
 }
 </script>
 

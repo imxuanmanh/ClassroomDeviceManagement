@@ -11,7 +11,13 @@
         <div class="stat-card card-overview">
           <div class="overview-header">
             <div class="stat-icon icon-primary">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
               </svg>
@@ -23,22 +29,22 @@
           </div>
 
           <div class="status-grid">
-            <div class="status-item">
+            <div class="status-item status-available">
               <span class="dot available"></span>
               <span class="label">Khả dụng</span>
               <span class="count">{{ deviceStats.available }}</span>
             </div>
-            <div class="status-item">
+            <div class="status-item status-borrowed">
               <span class="dot borrowed"></span>
               <span class="label">Đang mượn</span>
               <span class="count">{{ deviceStats.borrowed }}</span>
             </div>
-            <div class="status-item">
+            <div class="status-item status-maintenance">
               <span class="dot maintenance"></span>
               <span class="label">Bảo trì</span>
               <span class="count">{{ deviceStats.maintenance }}</span>
             </div>
-            <div class="status-item">
+            <div class="status-item status-broken">
               <span class="dot broken"></span>
               <span class="label">Hỏng</span>
               <span class="count">{{ deviceStats.broken }}</span>
@@ -65,10 +71,16 @@
           <div class="chart-bars">
             <div v-for="(day, i) in chartData" :key="i" class="bar-group">
               <div class="bars">
-                <div class="bar bar-borrow" :style="{ height: day.borrow * 10 + '%' }">
+                <div
+                  class="bar bar-borrow"
+                  :style="{ height: day.borrow * 10 + '%' }"
+                >
                   <span class="bar-value">{{ day.borrow }}</span>
                 </div>
-                <div class="bar bar-return" :style="{ height: day.return * 10 + '%' }">
+                <div
+                  class="bar bar-return"
+                  :style="{ height: day.return * 10 + '%' }"
+                >
                   <span class="bar-value">{{ day.return }}</span>
                 </div>
               </div>
@@ -94,17 +106,28 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in recentActivities" :key="index" class="table-row">
+              <tr
+                v-for="(item, index) in recentActivities"
+                :key="index"
+                class="table-row"
+              >
                 <td>{{ item.date }}</td>
                 <td>
-                  <span :class="['badge', item.type === 'borrow' ? 'badge-blue' : 'badge-green']">
-                    {{ item.type === 'borrow' ? 'Mượn' : 'Trả' }}
+                  <span
+                    :class="[
+                      'badge',
+                      item.type === 'borrow' ? 'badge-blue' : 'badge-green',
+                    ]"
+                  >
+                    {{ item.type === "borrow" ? "Mượn" : "Trả" }}
                   </span>
                 </td>
                 <td class="device-name">{{ item.device }}</td>
                 <td>
                   <div class="borrower-info">
-                    <div class="borrower-avatar">{{ item.user.substring(0, 2).toUpperCase() }}</div>
+                    <div class="borrower-avatar">
+                      {{ item.user.substring(0, 2).toUpperCase() }}
+                    </div>
                     <span>{{ item.user }}</span>
                   </div>
                 </td>
@@ -123,17 +146,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useDeviceStore } from '@/stores/device'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from "vue";
+import { useDeviceStore } from "@/stores/device";
+import { useRoute } from "vue-router";
 
-const deviceStore = useDeviceStore()
-const isRefreshing = ref(false)
-const route = useRoute()
+const deviceStore = useDeviceStore();
+const isRefreshing = ref(false);
+const route = useRoute();
 
-// --- 1. LOGIC TÍNH TOÁN 4 TRẠNG THÁI ---
+// --- COMPUTED: Lấy stats từ store ---
 const deviceStats = computed(() => {
-  const stats = deviceStore.stats
+  const stats = deviceStore.stats;
 
   return {
     total: stats.total,
@@ -147,109 +170,99 @@ const deviceStats = computed(() => {
       maintenance: stats.total ? (stats.maintenance / stats.total) * 100 : 0,
       broken: stats.total ? (stats.broken / stats.total) * 100 : 0,
     },
-  }
-})
+  };
+});
 
-// --- 2. DỮ LIỆU GIẢ LẬP ---
+// --- DỮ LIỆU GIẢ LẬP ---
 const chartData = computed(() => {
   return [
-    { label: 'T2', borrow: 6, return: 4 },
-    { label: 'T3', borrow: 8, return: 5 },
-    { label: 'T4', borrow: 5, return: 6 },
-    { label: 'T5', borrow: 9, return: 7 },
-    { label: 'T6', borrow: 4, return: 3 },
-    { label: 'T7', borrow: 7, return: 5 },
-    { label: 'CN', borrow: 3, return: 2 },
-  ]
-})
+    { label: "T2", borrow: 6, return: 4 },
+    { label: "T3", borrow: 8, return: 5 },
+    { label: "T4", borrow: 5, return: 6 },
+    { label: "T5", borrow: 9, return: 7 },
+    { label: "T6", borrow: 4, return: 3 },
+    { label: "T7", borrow: 7, return: 5 },
+    { label: "CN", borrow: 3, return: 2 },
+  ];
+});
 
 const recentActivities = ref([
   {
-    device: 'MacBook Pro M1',
-    user: 'Nguyễn Văn A',
-    date: '02/12 08:30',
-    type: 'borrow',
-    status: 'Đang mượn',
-    statusClass: 'warning',
+    device: "MacBook Pro M1",
+    user: "Nguyễn Văn A",
+    date: "02/12 08:30",
+    type: "borrow",
+    status: "Đang mượn",
+    statusClass: "warning",
   },
   {
-    device: 'Dell XPS 15',
-    user: 'Trần Thị B',
-    date: '02/12 09:15',
-    type: 'return',
-    status: 'Hoàn thành',
-    statusClass: 'success',
+    device: "Dell XPS 15",
+    user: "Trần Thị B",
+    date: "02/12 09:15",
+    type: "return",
+    status: "Hoàn thành",
+    statusClass: "success",
   },
   {
-    device: 'iPad Pro 12.9',
-    user: 'Lê Văn C',
-    date: '01/12 14:20',
-    type: 'borrow',
-    status: 'Đang mượn',
-    statusClass: 'warning',
+    device: "iPad Pro 12.9",
+    user: "Lê Văn C",
+    date: "01/12 14:20",
+    type: "borrow",
+    status: "Đang mượn",
+    statusClass: "warning",
   },
   {
-    device: 'Sony Alpha A7',
-    user: 'Phạm Thị D',
-    date: '01/12 16:45',
-    type: 'borrow',
-    status: 'Quá hạn',
-    statusClass: 'danger',
+    device: "Sony Alpha A7",
+    user: "Phạm Thị D",
+    date: "01/12 16:45",
+    type: "borrow",
+    status: "Quá hạn",
+    statusClass: "danger",
   },
-])
+]);
 
-// --- 3. HÀM REFRESH DỮ LIỆU ---
+// --- 🔥 FIX: HÀM REFRESH ĐÚNG CÁC BƯỚC ---
 async function refreshData() {
-  if (isRefreshing.value) return // Tránh gọi nhiều lần
+  if (isRefreshing.value) return;
 
-  isRefreshing.value = true
-  console.log('🔄 Đang refresh dashboard...')
+  isRefreshing.value = true;
+  console.log("🔄 Dashboard refreshing...");
 
   try {
-    // 🔥 RESET toàn bộ allInstances trước khi fetch mới
-    deviceStore.allInstances = []
-    console.log('🧹 Đã reset allInstances')
+    // 🔥 BƯỚC 1: Fetch categories
+    await deviceStore.fetchCategories();
+    console.log(`✅ Đã fetch ${deviceStore.categories.length} categories`);
 
-    // Tải lại categories
-    await deviceStore.fetchCategories()
-
-    // Tải lại models và instances cho từng category
+    // 🔥 BƯỚC 2: Fetch models + instances cho TỪNG category
     for (const category of deviceStore.categories) {
-      if (deviceStore.fetchModelsByCategory) {
-        await deviceStore.fetchModelsByCategory(category.id)
-      }
+      await deviceStore.fetchModelsByCategory(category.id);
     }
 
-    console.log('✅ Dashboard đã refresh!')
+    console.log(`✅ Tổng instances: ${deviceStore.allInstances.length}`);
+    console.log("📊 Stats hiện tại:", deviceStore.stats);
   } catch (e) {
-    console.error('❌ Lỗi khi refresh dashboard:', e)
+    console.error("❌ Lỗi refresh dashboard:", e);
   } finally {
-    isRefreshing.value = false
+    isRefreshing.value = false;
   }
 }
 
-// --- 4. MOUNTED ---
+// --- MOUNTED ---
 onMounted(async () => {
-  // Load dữ liệu lần đầu
-  console.log('🎯 Dashboard mounted - loading initial data')
-  await refreshData()
-})
+  console.log("🎯 Dashboard mounted");
+  await refreshData();
+});
 
-// --- 5. WATCH ROUTE - REFRESH KHI VÀO LẠI DASHBOARD ---
+// --- WATCH ROUTE để refresh khi vào lại ---
 watch(
   () => route.path,
   (newPath) => {
-    if (newPath === '/dashboard' || newPath === '/') {
-      console.log('🔄 Quay lại Dashboard - refreshing data')
-      refreshData()
+    if (newPath === "/dashboard" || newPath === "/") {
+      console.log("🔄 Quay lại Dashboard");
+      refreshData();
     }
-  },
-)
-
-// --- 6. CLEANUP KHI UNMOUNT ---
-onUnmounted(() => {
-  console.log('👋 Dashboard unmounted')
-})
+  }
+);
 </script>
 
 <style scoped>
@@ -312,7 +325,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.95),
+    rgba(15, 23, 42, 0.95)
+  );
   border: 1px solid rgba(0, 173, 181, 0.2);
 }
 
@@ -322,38 +339,38 @@ onUnmounted(() => {
   gap: 16px;
 }
 
+.total-info {
+  flex: 1;
+}
+
 .icon-primary {
   background: rgba(0, 173, 181, 0.15);
   color: #00adb5;
-}
-
-.progress-stacked {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
-  width: 100%;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.progress-segment {
-  height: 100%;
-  transition: width 0.5s ease;
+.stat-label {
+  color: #94a3b8;
+  font-size: 13px;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
-.seg-available {
-  background: #10b981;
-}
-.seg-borrowed {
-  background: #f59e0b;
-}
-.seg-maintenance {
-  background: #3b82f6;
-}
-.seg-broken {
-  background: #ef4444;
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
 }
 
+/* === STATUS GRID WITH COLORS === */
 .status-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -367,75 +384,151 @@ onUnmounted(() => {
   align-items: flex-start;
   justify-content: center;
   font-size: 14px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
-  gap: 6px;
+  padding: 16px;
+  border-radius: 12px;
+  gap: 8px;
+  border: 1px solid;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transition: height 0.3s ease;
+}
+
+.status-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.status-item:hover::before {
+  height: 100%;
+  opacity: 0.1;
+}
+
+/* === KHẢ DỤNG - GREEN === */
+.status-available {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.12),
+    rgba(16, 185, 129, 0.05)
+  );
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.status-available::before {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.status-available:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* === ĐANG MƯỢN - ORANGE === */
+.status-borrowed {
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.12),
+    rgba(245, 158, 11, 0.05)
+  );
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.status-borrowed::before {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.status-borrowed:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* === BẢO TRÌ - BLUE === */
+.status-maintenance {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.12),
+    rgba(59, 130, 246, 0.05)
+  );
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.status-maintenance::before {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.status-maintenance:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* === HỎNG - RED === */
+.status-broken {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.12),
+    rgba(239, 68, 68, 0.05)
+  );
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.status-broken::before {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.status-broken:hover {
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .status-item .label {
   color: #94a3b8;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-item .count {
   color: #f1f5f9;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 24px;
+  margin-top: 4px;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   display: block;
 }
+
 .dot.available {
   background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
+
 .dot.borrowed {
   background: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
 }
+
 .dot.maintenance {
   background: #3b82f6;
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
 }
+
 .dot.broken {
   background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
-}
-
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-content {
-  flex: 1;
-}
-.stat-label {
-  color: #94a3b8;
-  font-size: 13px;
-  margin: 0 0 4px 0;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
-  color: #fff;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
 /* === BIỂU ĐỒ === */
@@ -454,15 +547,18 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 24px;
 }
+
 .chart-header h3 {
   margin: 0;
   color: #00adb5;
   font-size: 18px;
 }
+
 .chart-legend {
   display: flex;
   gap: 16px;
 }
+
 .legend-item {
   display: flex;
   align-items: center;
@@ -470,14 +566,17 @@ onUnmounted(() => {
   font-size: 13px;
   color: #cbd5e1;
 }
+
 .legend-color {
   width: 12px;
   height: 12px;
   border-radius: 3px;
 }
+
 .legend-color.borrow {
   background: #00adb5;
 }
+
 .legend-color.return {
   background: #10b981;
 }
@@ -486,12 +585,14 @@ onUnmounted(() => {
   height: 220px;
   padding: 10px 0;
 }
+
 .chart-bars {
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
   height: 100%;
 }
+
 .bar-group {
   display: flex;
   flex-direction: column;
@@ -500,6 +601,7 @@ onUnmounted(() => {
   height: 100%;
   flex: 1;
 }
+
 .bars {
   display: flex;
   align-items: flex-end;
@@ -517,12 +619,15 @@ onUnmounted(() => {
   justify-content: center;
   transition: height 0.5s ease;
 }
+
 .bar-borrow {
   background: linear-gradient(180deg, #00adb5 0%, #0891b2 100%);
 }
+
 .bar-return {
   background: linear-gradient(180deg, #10b981 0%, #059669 100%);
 }
+
 .bar-value {
   position: absolute;
   top: -20px;
@@ -531,9 +636,11 @@ onUnmounted(() => {
   opacity: 0;
   transition: opacity 0.2s;
 }
+
 .bar:hover .bar-value {
   opacity: 1;
 }
+
 .bar-label {
   font-size: 12px;
   color: #64748b;
@@ -547,9 +654,11 @@ onUnmounted(() => {
   padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .table-header {
   margin-bottom: 20px;
 }
+
 .table-header h3 {
   margin: 0;
   color: #00adb5;
@@ -559,10 +668,12 @@ onUnmounted(() => {
 .table-container {
   overflow-x: auto;
 }
+
 .modern-table {
   width: 100%;
   border-collapse: collapse;
 }
+
 .modern-table th {
   text-align: left;
   padding: 16px;
@@ -572,6 +683,7 @@ onUnmounted(() => {
   text-transform: uppercase;
   border-bottom: 2px solid rgba(0, 173, 181, 0.2);
 }
+
 .modern-table td {
   padding: 16px;
   color: #cbd5e1;
@@ -585,10 +697,12 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 600;
 }
+
 .badge-blue {
   background: rgba(0, 173, 181, 0.15);
   color: #00adb5;
 }
+
 .badge-green {
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
@@ -598,11 +712,13 @@ onUnmounted(() => {
   font-weight: 600;
   color: #f1f5f9;
 }
+
 .borrower-info {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .borrower-avatar {
   width: 28px;
   height: 28px;
@@ -620,12 +736,15 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 600;
 }
+
 .status-badge.warning {
   color: #f59e0b;
 }
+
 .status-badge.success {
   color: #10b981;
 }
+
 .status-badge.danger {
   color: #ef4444;
 }
@@ -634,9 +753,11 @@ onUnmounted(() => {
   .status-grid {
     grid-template-columns: 1fr 1fr;
   }
+
   .bars {
     gap: 4px;
   }
+
   .bar {
     width: 16px;
   }

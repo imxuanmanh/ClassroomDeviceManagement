@@ -16,7 +16,6 @@ Hướng dẫn chi tiết về cấu trúc thư mục của project.
 ├── .gitattributes          # Git attributes
 ├── .vscode/                # VSCode workspace settings
 ├── README.md               # Project documentation
-├── REALTIME_UPDATE_GUIDE.md # Real-time feature guide
 └── STRUCTURE.md            # This file
 ```
 

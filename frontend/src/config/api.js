@@ -1,119 +1,219 @@
 /**
- * CẤU HÌNH API - QUẢN LÝ THIẾT BỊ PHÒNG HỌC
+ * CẤU HÌNH API - QUẢN LÝ THIẾT BỊ PHÒNG HỌC (CÓ TOKEN ĐẦY ĐỦ)
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://10.10.49.17:5129/api',
+  BASE_URL: "http://10.10.49.23:5129/api",
 
   ENDPOINTS: {
-    DEVICES: '/instances',
-    USERS: '/users',
-    BORROWS: '/borrow-requests',
-    HISTORY: '/history',
-    REPORTS: '/reports',
+    DEVICES: "/instances",
+    USERS: "/users",
+    BORROWS: "/borrow-requests",
+    HISTORY: "/history",
+    REPORTS: "/reports",
   },
 
   TIMEOUT: 10000,
 
   DEFAULT_HEADERS: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
+};
+
+/**
+ * ✅ LẤY TOKEN TỪ LOCALSTORAGE
+ */
+function getAuthToken() {
+  return localStorage.getItem("authToken") || "";
+}
+
+/**
+ * ✅ TẠO HEADERS VỚI TOKEN TỰ ĐỘNG
+ */
+function getAuthHeaders(additionalHeaders = {}) {
+  const token = getAuthToken();
+  const headers = { ...API_CONFIG.DEFAULT_HEADERS, ...additionalHeaders };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 /**
  * Tạo URL đầy đủ từ endpoint
  */
 export function buildApiUrl(endpoint) {
-  return `${API_CONFIG.BASE_URL}${endpoint}`
+  return `${API_CONFIG.BASE_URL}${endpoint}`;
 }
 
 /**
- * Gọi API chung
+ * ✅ GỌI API CHUNG (TỰ ĐỘNG THÊM TOKEN)
  */
 export async function apiCall(endpoint, options = {}) {
-  const url = buildApiUrl(endpoint)
+  const url = buildApiUrl(endpoint);
   const config = {
     timeout: API_CONFIG.TIMEOUT,
-    headers: { ...API_CONFIG.DEFAULT_HEADERS, ...options.headers },
+    headers: getAuthHeaders(options.headers),
     ...options,
-  }
+  };
 
   try {
-    const response = await fetch(url, config)
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok) {
-      throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`)
+    const response = await fetch(url, config);
+    const data = await response.json().catch(() => ({}));
+
+    // ✅ Xử lý 401 Unauthorized
+    if (response.status === 401) {
+      localStorage.removeItem("authToken");
+      window.location.href = "/login";
+      throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
     }
-    return data
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || `HTTP ${response.status}: ${response.statusText}`
+      );
+    }
+    return data;
   } catch (error) {
-    console.error('API call failed:', error)
-    throw error
+    console.error("API call failed:", error);
+    throw error;
   }
 }
 
 /**
- * API QUẢN LÝ THIẾT BỊ
+ * ✅ API XÁC THỰC
+ */
+export const authApi = {
+  login: async (data) => {
+    const response = await apiCall("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    if (response.token) {
+      localStorage.setItem("authToken", response.token);
+    }
+
+    return response;
+  },
+
+  register: (data) =>
+    apiCall("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  logout: () => {
+    localStorage.removeItem("authToken");
+    window.location.href = "/login";
+  },
+};
+
+/**
+ * ✅ API QUẢN LÝ CATEGORY
  */
 export const categoryApi = {
-  getAll: () => apiCall('/categories'),
+  getAll: () => apiCall("/categories"),
   getModelsByCategory: (id) => apiCall(`/categories/${id}/models`),
   create: (data) =>
-    apiCall('/categories', {
-      method: 'POST',
+    apiCall("/categories", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
-}
+};
 
+/**
+ * ✅ API QUẢN LÝ MODEL
+ */
 export const modelApi = {
-  getAll: () => apiCall('/models'),
+  getAll: () => apiCall("/models"),
   getById: (id) => apiCall(`/models/${id}`),
   create: (data) =>
-    apiCall('/models', {
-      method: 'POST',
+    apiCall("/models", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
-  // ✅ SỬA LẠI: Truyền đúng cách vào apiCall
   getInstances: (modelId) => apiCall(`/models/${modelId}/instances`),
-}
+};
 
+/**
+ * ✅ API QUẢN LÝ THIẾT BỊ (DEVICES)
+ */
 export const deviceApi = {
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.DEVICES),
   getById: (id) => apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`),
   create: (data) =>
     apiCall(API_CONFIG.ENDPOINTS.DEVICES, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     }),
   update: (id, data) =>
     apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
   delete: (id) =>
     apiCall(`${API_CONFIG.ENDPOINTS.DEVICES}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }),
-}
+};
 
 /**
- * API NGƯỜI DÙNG
+ * ✅ API QUẢN LÝ INSTANCES (THIẾT BỊ CỤ THỂ)
+ */
+export const instanceApi = {
+  create: (data) =>
+    apiCall("/instances", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getById: (instanceId) => apiCall(`/instances/${instanceId}`),
+
+  update: (instanceId, data) =>
+    apiCall(`/instances/${instanceId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (instanceId) =>
+    apiCall(`/instances/${instanceId}`, {
+      method: "DELETE",
+    }),
+
+  updateStatus: (instanceId, statusId) =>
+    apiCall(`/instances/${instanceId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ statusId }),
+    }),
+
+  getByStatus: (statusId) => apiCall(`/instances/status/${statusId}`),
+};
+
+/**
+ * ✅ API NGƯỜI DÙNG
  */
 export const userApi = {
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.USERS),
+
   create: (data) =>
     apiCall(API_CONFIG.ENDPOINTS.USERS, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     }),
+
   update: (id, data) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
+
   delete: (id) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }),
 
   getPendingRequests: (userId) =>
@@ -125,259 +225,208 @@ export const userApi = {
   getRejectedRequests: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/borrow-requests/rejected`),
 
-  getNotifications: (userId) => apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications`),
+  getNotifications: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications`),
 
-  /**
-   * ✅ NÚT TICK: Đánh dấu tất cả là đã đọc (Seen)
-   * Method: PATCH
-   * Endpoint: /users/{userId}/notification/seen
-   */
   markAllSeen: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications/seen`, {
-      method: 'PATCH',
+      method: "PATCH",
     }),
 
-  /**
-   * ❌ NÚT X: Xóa tất cả thông báo (Deleted)
-   * Method: PATCH
-   * Endpoint: /users/{userId}/notification/deleted
-   */
   deleteAllNotifications: (userId) =>
     apiCall(`${API_CONFIG.ENDPOINTS.USERS}/${userId}/notifications/deleted`, {
-      method: 'PATCH',
+      method: "PATCH",
     }),
-}
+};
 
 /**
- * ✨ API QUẢN LÝ INSTANCES (THIẾT BỊ CỤ THỂ) - MỚI
- */
-export const instanceApi = {
-  /**
-   * Tạo instance mới
-   * @param {Object} data - Dữ liệu instance
-   * @param {number} data.modelId - ID của model
-   * @param {string} data.instanceCode - Mã thiết bị (VD: CAM-001)
-   * @param {string} data.currentLocation - Vị trí hiện tại
-   * @param {number} data.statusId - ID trạng thái (1: Khả dụng, 2: Đang mượn, 3: Bảo trì, 4: Hỏng)
-   * @param {string} data.notes - Ghi chú (optional)
-   */
-  create: (data) =>
-    apiCall('/instances', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  /**
-   * Lấy thông tin instance theo ID
-   */
-  getById: (instanceId) => apiCall(`/instances/${instanceId}`),
-
-  /**
-   * Cập nhật thông tin instance
-   */
-  update: (instanceId, data) =>
-    apiCall(`/instances/${instanceId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-
-  /**
-   * Xóa instance
-   */
-  delete: (instanceId) =>
-    apiCall(`/instances/${instanceId}`, {
-      method: 'DELETE',
-    }),
-
-  /**
-   * Cập nhật trạng thái instance
-   */
-  updateStatus: (instanceId, statusId) =>
-    apiCall(`/instances/${instanceId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ statusId }),
-    }),
-
-  /**
-   * Lấy danh sách instances theo trạng thái
-   * @param {number} statusId - 1: Khả dụng, 2: Đang mượn, 3: Bảo trì, 4: Hỏng
-   */
-  getByStatus: (statusId) => apiCall(`/instances/status/${statusId}`),
-}
-
-/**
- * API MƯỢN/TRẢ
+ * ✅ API MƯỢN/TRẢ
  */
 export const borrowApi = {
-  /**
-   * ✅ Lấy danh sách yêu cầu theo trạng thái
-   * @param {'pending' | 'approved' | 'rejected' | 'returned'} status - Trạng thái cần lấy
-   */
-  getByStatus: (status) => {
-    const endpoint = `${API_CONFIG.ENDPOINTS.BORROWS}/${status}`
-    return apiCall(endpoint)
-  },
+  getByStatus: (status) => apiCall(`/borrow-requests/${status}`),
 
-  /**
-   * ✅ Chấp nhận yêu cầu
-   */
   approveRequest: async (requestId) => {
     try {
       const res = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.BORROWS}/${requestId}/approve`,
+        buildApiUrl(`/borrow-requests/${requestId}/approve`),
         {
-          method: 'PATCH',
-          headers: API_CONFIG.DEFAULT_HEADERS,
-        },
-      )
-      const data = await res.json().catch(() => ({}))
-      return {
-        ok: res.ok,
-        status: res.status,
-        message: data.message || 'Không có phản hồi từ server.',
-      }
+          method: "PATCH",
+          headers: getAuthHeaders(),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, message: data.message };
     } catch (error) {
-      console.error('❌ Lỗi khi gọi API approveRequest:', error)
+      console.error("❌ Lỗi approveRequest:", error);
       return {
         ok: false,
         status: 0,
-        message: 'Không thể kết nối đến máy chủ.',
-      }
+        message: "Không thể kết nối đến máy chủ.",
+      };
     }
   },
 
-  /**
-   * ❌ Từ chối yêu cầu
-   */
   rejectRequest: async (requestId) => {
     try {
       const res = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.BORROWS}/${requestId}/reject`,
+        buildApiUrl(`/borrow-requests/${requestId}/reject`),
         {
-          method: 'PATCH',
-          headers: API_CONFIG.DEFAULT_HEADERS,
-        },
-      )
-      const data = await res.json().catch(() => ({}))
-      return {
-        ok: res.ok,
-        status: res.status,
-        message: data.message || 'Không có phản hồi từ server.',
-      }
+          method: "PATCH",
+          headers: getAuthHeaders(),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, message: data.message };
     } catch (error) {
-      console.error('❌ Lỗi khi gọi API rejectRequest:', error)
+      console.error("❌ Lỗi rejectRequest:", error);
       return {
         ok: false,
         status: 0,
-        message: 'Không thể kết nối đến máy chủ.',
-      }
+        message: "Không thể kết nối đến máy chủ.",
+      };
     }
   },
-  /**
-   * ➕ Tạo yêu cầu mượn thiết bị mới
-   */
+
+  return: async (requestId) => {
+    try {
+      const res = await fetch(
+        buildApiUrl(`/borrow-requests/${requestId}/return`),
+        {
+          method: "PATCH",
+          headers: getAuthHeaders(),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, message: data.message };
+    } catch (error) {
+      console.error("❌ Lỗi return:", error);
+      return {
+        ok: false,
+        status: 0,
+        message: "Không thể kết nối đến máy chủ.",
+      };
+    }
+  },
+
   create: (data) =>
-    apiCall(API_CONFIG.ENDPOINTS.BORROWS, {
-      method: 'POST',
+    apiCall("/borrow-requests", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
-  /**
-   * 🔁 Xác nhận trả thiết bị
-   */
-  return: (id) =>
-    apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${id}/return`, {
-      method: 'POST',
-    }),
-
-  /** ❌ Xóa yêu cầu */
   delete: (requestId) =>
-    apiCall(`${API_CONFIG.ENDPOINTS.BORROWS}/${requestId}`, {
-      method: 'DELETE',
+    apiCall(`/borrow-requests/${requestId}`, {
+      method: "DELETE",
     }),
-}
+};
 
 /**
- * API LỊCH SỬ
+ * ✅ API LỊCH SỬ
  */
 export const historyApi = {
   getAll: () => apiCall(API_CONFIG.ENDPOINTS.HISTORY),
-  getByDevice: (deviceId) => apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/device/${deviceId}`),
-  getByUser: (userId) => apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/user/${userId}`),
-}
+  getByDevice: (deviceId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/device/${deviceId}`),
+  getByUser: (userId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.HISTORY}/user/${userId}`),
+};
 
 /**
- * API BÁO CÁO
+ * ✅ API BÁO CÁO
  */
 export const reportApi = {
   getStats: () => apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/stats`),
-  getBorrowsByPeriod: (startDate, endDate) =>
-    apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/borrows?start=${startDate}&end=${endDate}`),
 
-  /**
-   * ⚠️ Tạo báo cáo thiết bị hỏng
-   * @param {FormData} formData - FormData chứa UserId, InstanceId, Description, và image
-   */
+  getBorrowsByPeriod: (startDate, endDate) =>
+    apiCall(
+      `${API_CONFIG.ENDPOINTS.REPORTS}/borrows?start=${startDate}&end=${endDate}`
+    ),
+
+  getByStatus: (statusId) =>
+    apiCall(`${API_CONFIG.ENDPOINTS.REPORTS}/status/${statusId}`),
+
+  processReport: async (reportId) => {
+    const res = await fetch(
+      buildApiUrl(`${API_CONFIG.ENDPOINTS.REPORTS}/${reportId}/process`),
+      {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      }
+    );
+    return res.ok;
+  },
+
+  completeReport: async (reportId, isSuccess) => {
+    const res = await fetch(
+      buildApiUrl(
+        `${API_CONFIG.ENDPOINTS.REPORTS}/${reportId}/complete?isSuccess=${isSuccess}`
+      ),
+      {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      }
+    );
+    return res.ok;
+  },
+
+  cancelReport: async (reportId) => {
+    const res = await fetch(
+      buildApiUrl(`${API_CONFIG.ENDPOINTS.REPORTS}/${reportId}/cancel`),
+      {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      }
+    );
+    return res.ok;
+  },
+
   createBrokenReport: async (formData) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORTS}`, {
-        method: 'POST',
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.REPORTS), {
+        method: "POST",
+        headers: headers,
         body: formData,
-        // Không set Content-Type header khi dùng FormData
-      })
+      });
 
-      const data = await response.json().catch(() => ({}))
-
+      const data = await response.json().catch(() => ({}));
       return {
         ok: response.ok,
         status: response.status,
-        message: data.message || data || 'Không có phản hồi từ server.',
-      }
+        message: data.message || "Không có phản hồi từ server.",
+      };
     } catch (error) {
-      console.error('❌ Lỗi khi gọi API createBrokenReport:', error)
+      console.error("❌ Lỗi createBrokenReport:", error);
       return {
         ok: false,
         status: 0,
-        message: 'Không thể kết nối đến máy chủ.',
-      }
+        message: "Không thể kết nối đến máy chủ.",
+      };
     }
   },
-}
+};
 
 /**
- * API XÁC THỰC
- */
-export const authApi = {
-  login: (data) =>
-    apiCall('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  register: (data) =>
-    apiCall('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-}
-
-/**
- * ✨ API THÔNG BÁO
+ * ✅ API THÔNG BÁO
  */
 export const notificationApi = {
-  // Lấy danh sách cũ
   getByUser: (userId) => apiCall(`/notifications/${userId}`),
 
-  // Đánh dấu đã đọc
   markAllAsRead: (userId) =>
-    apiCall(`/notifications/${userId}/read`, {
-      method: 'PUT',
+    apiCall(`/notifications/${userId}/seen`, {
+      method: "PATCH",
     }),
 
-  /**
-   * 📡 Lấy URL cho SSE (Đã cập nhật theo yêu cầu)
-   * Endpoint: /notifications/subscribe/${userId}
-   * Trả về URL string để useSSE sử dụng
-   */
+  // 👇 SỬA LẠI ĐÚNG NHƯ NÀY LÀ ĐƯỢC
+  markAsRead: (notificationId) =>
+    apiCall(`/notifications/${notificationId}/seen`, {
+      method: "PATCH",
+    }),
+
   getStreamUrl: (userId) => buildApiUrl(`/notifications/subscribe/${userId}`),
-}
+};

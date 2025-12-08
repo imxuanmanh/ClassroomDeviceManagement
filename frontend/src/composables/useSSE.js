@@ -1,29 +1,27 @@
 // src/composables/useSSE.js
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted } from "vue";
+// 👇 Đảm bảo bạn đã cài: npm install event-source-polyfill
+import { EventSourcePolyfill } from "event-source-polyfill";
 
 /**
- * Composable để quản lý Server-Sent Events (SSE) connection
- * @param {string} url - URL của SSE endpoint
- * @param {object} options - Các tùy chọn cấu hình
- * @returns {object} - SSE state và methods
+ * Composable quản lý SSE có hỗ trợ Header Authorization (Bearer Token)
  */
 export function useSSE(url, options = {}) {
   const {
     autoConnect = false,
-    withCredentials = false,
     reconnect = true,
     reconnectDelay = 3000,
     maxReconnectAttempts = 5,
-  } = options
+  } = options;
 
   // State
-  const data = ref(null)
-  const error = ref(null)
-  const isConnected = ref(false)
-  const reconnectAttempts = ref(0)
+  const data = ref(null);
+  const error = ref(null);
+  const isConnected = ref(false);
+  const reconnectAttempts = ref(0);
 
-  let eventSource = null
-  let reconnectTimer = null
+  let eventSource = null;
+  let reconnectTimer = null;
 
   /**
    * Kết nối tới SSE server
@@ -32,140 +30,144 @@ export function useSSE(url, options = {}) {
     try {
       // Ngăn multiple connections
       if (eventSource) {
-        disconnect()
+        disconnect();
       }
 
-      // Tạo EventSource với options
-      const eventSourceOptions = withCredentials ? { withCredentials: true } : {}
+      // 👇 BƯỚC QUAN TRỌNG: Lấy token và cấu hình Header
+      const token = localStorage.getItem("authToken");
 
-      eventSource = new EventSource(url, eventSourceOptions)
+      const esOptions = {
+        headers: {
+          Authorization: `Bearer ${token}`, // Gửi Token tại đây
+        },
+        heartbeatTimeout: 120000, // Tăng thời gian timeout để tránh ngắt kết nối sớm
+      };
+
+      // 👇 Dùng EventSourcePolyfill thay vì EventSource gốc
+      eventSource = new EventSourcePolyfill(url, esOptions);
 
       // Event: Connection opened
       eventSource.onopen = () => {
-        isConnected.value = true
-        reconnectAttempts.value = 0
-        error.value = null
-        console.log('✅ SSE Connected to:', url)
-      }
+        isConnected.value = true;
+        reconnectAttempts.value = 0;
+        error.value = null;
+        console.log("✅ SSE Connected to:", url);
+      };
 
       // Event: Message received
       eventSource.onmessage = (event) => {
         try {
-          // Parse JSON data
-          data.value = JSON.parse(event.data)
+          data.value = JSON.parse(event.data);
         } catch (e) {
-          // Nếu không phải JSON, lưu raw data
-          data.value = event.data
+          data.value = event.data;
         }
-      }
+      };
 
       // Event: Error occurred
       eventSource.onerror = (err) => {
-        error.value = err
-        isConnected.value = false
-        console.error('❌ SSE Error:', err)
+        // Log lỗi chi tiết để debug
+        console.error("❌ SSE Error Details:", err);
 
-        // Auto reconnect nếu được bật
-        if (reconnect && reconnectAttempts.value < maxReconnectAttempts) {
-          handleReconnect()
-        } else if (reconnectAttempts.value >= maxReconnectAttempts) {
-          console.error('🚫 Max reconnect attempts reached')
+        error.value = err;
+        isConnected.value = false;
+
+        // 🛑 Nếu lỗi là 401 (Hết hạn Token), DỪNG reconnect ngay lập tức
+        if (err && err.status === 401) {
+          console.error("⛔ Token hết hạn hoặc không hợp lệ. Dừng Reconnect.");
+          disconnect();
+          return;
         }
-      }
+
+        // Auto reconnect logic
+        if (reconnect && reconnectAttempts.value < maxReconnectAttempts) {
+          handleReconnect();
+        } else if (reconnectAttempts.value >= maxReconnectAttempts) {
+          console.error("🚫 Max reconnect attempts reached");
+        }
+      };
     } catch (err) {
-      error.value = err
-      console.error('❌ Failed to create SSE connection:', err)
+      error.value = err;
+      console.error("❌ Failed to create SSE connection:", err);
     }
-  }
+  };
 
   /**
    * Ngắt kết nối SSE
    */
   const disconnect = () => {
     if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
 
     if (eventSource) {
-      eventSource.close()
-      eventSource = null
-      isConnected.value = false
-      console.log('🔌 SSE Disconnected')
+      eventSource.close();
+      eventSource = null;
+      isConnected.value = false;
+      console.log("🔌 SSE Disconnected");
     }
-  }
+  };
 
   /**
    * Xử lý reconnect logic
    */
   const handleReconnect = () => {
-    reconnectAttempts.value++
+    reconnectAttempts.value++;
     console.log(
-      `🔄 Attempting to reconnect... (${reconnectAttempts.value}/${maxReconnectAttempts})`,
-    )
+      `🔄 Attempting to reconnect... (${reconnectAttempts.value}/${maxReconnectAttempts})`
+    );
 
     reconnectTimer = setTimeout(() => {
-      connect()
-    }, reconnectDelay)
-  }
+      connect();
+    }, reconnectDelay);
+  };
 
   /**
    * Lắng nghe custom event từ SSE
-   * @param {string} eventName - Tên của custom event
-   * @param {function} callback - Callback function
    */
   const addEventListener = (eventName, callback) => {
     if (eventSource) {
       eventSource.addEventListener(eventName, (event) => {
         try {
-          const parsedData = JSON.parse(event.data)
-          callback(parsedData, event)
+          const parsedData = JSON.parse(event.data);
+          callback(parsedData, event);
         } catch (e) {
-          callback(event.data, event)
+          callback(event.data, event);
         }
-      })
+      });
     } else {
-      console.warn('⚠️ EventSource not initialized. Call connect() first.')
+      console.warn("⚠️ EventSource not initialized. Call connect() first.");
     }
-  }
+  };
 
-  /**
-   * Reset error state
-   */
   const resetError = () => {
-    error.value = null
-  }
+    error.value = null;
+  };
 
-  /**
-   * Manual reconnect
-   */
   const reconnectManual = () => {
-    reconnectAttempts.value = 0
-    connect()
-  }
+    reconnectAttempts.value = 0;
+    connect();
+  };
 
   // Auto connect nếu được bật
   if (autoConnect) {
-    connect()
+    connect();
   }
 
   // Cleanup khi component unmount
   onUnmounted(() => {
-    disconnect()
-  })
+    disconnect();
+  });
 
   return {
-    // State
     data,
     error,
     isConnected,
     reconnectAttempts,
-
-    // Methods
     connect,
     disconnect,
     addEventListener,
     resetError,
     reconnect: reconnectManual,
-  }
+  };
 }

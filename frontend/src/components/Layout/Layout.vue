@@ -15,29 +15,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import Sidebar from './Sidebar.vue'
-import Header from './Header.vue'
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import Sidebar from "./Sidebar.vue";
+import Header from "./Header.vue";
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(false);
 
 function toggleSidebar() {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
 }
 
 function onKeyDown(e) {
-  const isMeta = e.ctrlKey || e.metaKey
-  if (isMeta && (e.key === 'b' || e.key === 'B')) {
-    e.preventDefault()
-    toggleSidebar()
+  const isMeta = e.ctrlKey || e.metaKey;
+  if (isMeta && (e.key === "b" || e.key === "B")) {
+    e.preventDefault();
+    toggleSidebar();
   }
-  if (e.key === 'Escape') {
-    isSidebarCollapsed.value = true
+  if (e.key === "Escape") {
+    isSidebarCollapsed.value = true;
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKeyDown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
+onMounted(() => window.addEventListener("keydown", onKeyDown));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeyDown));
 </script>
 
 <style scoped>
@@ -81,15 +81,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 
 /* Decorative background pattern */
 .content::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-image:
-    radial-gradient(circle at 20% 50%, rgba(0, 239, 255, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(0, 239, 255, 0.03) 0%, transparent 50%);
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(0, 239, 255, 0.03) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(0, 239, 255, 0.03) 0%,
+      transparent 50%
+    );
   pointer-events: none;
 }
 
