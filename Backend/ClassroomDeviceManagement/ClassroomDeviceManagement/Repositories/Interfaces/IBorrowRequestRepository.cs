@@ -2,6 +2,7 @@
 using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Enums;
 using ClassroomDeviceManagement.ViewModels;
+using ClassroomDeviceManagement.Dtos.BorrowRequest;
 using ClassroomDeviceManagement.ViewModels.BorrowRequest;
 
 namespace ClassroomDeviceManagement.Repositories.Interfaces
@@ -10,6 +11,7 @@ namespace ClassroomDeviceManagement.Repositories.Interfaces
     {
         Task<BorrowRequestDto?> AddBorrowRequestAsync(BorrowRequest request);
         Task<bool> DeleteBorrowRequestAsync(int requestId);
+        Task<BorrowRequest?> GetByIdAsync(int requestId);
         Task<IEnumerable<PendingRequestViewModel>> GetPendingBorrowRequestsAsync();
         Task<IEnumerable<ApprovedRequestViewModel>> GetApprovedBorrowRequestsAsync();
         Task<IEnumerable<RejectedRequestViewModel>> GetRejectedBorrowRequestsAsync();

@@ -8,7 +8,10 @@ namespace ClassroomDeviceManagement.Dto
         public string InstanceCode { get; set; } = string.Empty;
         public int StatusId { get; set; }
         public string CurrentLocation { get; set; } = string.Empty;
-        
+
+        public string Borrower { get; set; } = string.Empty;
+        public string UsageDuration { get; set; } = string.Empty;
+
         public DeviceInstanceDto() { }
         public DeviceInstanceDto(string instanceCode, string currentLocation)
         {

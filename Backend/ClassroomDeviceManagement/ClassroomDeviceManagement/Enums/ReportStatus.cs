@@ -4,6 +4,8 @@
     {
         New = 1,
         InProgress = 2,
-        Resolve = 3
+        Resolved = 3,
+        Cancel = 4,
+        Failed = 5
     }
 }

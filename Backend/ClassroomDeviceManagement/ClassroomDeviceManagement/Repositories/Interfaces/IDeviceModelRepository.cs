@@ -9,7 +9,6 @@ namespace ClassroomDeviceManagement.Repositories.Interfaces
         Task<DeviceModelDto?> GetByIdAsync(int id);
 
         Task AddModelAsync(DeviceModel model);
-        //Task UpdateModelAsync(DeviceModel model);
-        //Task DeleteModelAsync(int Id);
+        
     }
 }

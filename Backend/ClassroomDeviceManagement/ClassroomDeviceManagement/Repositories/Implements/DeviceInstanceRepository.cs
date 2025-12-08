@@ -20,13 +20,29 @@ namespace ClassroomDeviceManagement.Repositories.Implements
 
             await _dbManager.ExecuteQueryAsync(
                 @"
-                SELECT instance_id, instance_code, status_id, current_location
-
-                FROM 
-                    device_instance 
-
-                WHERE 
-                    model_id = @modelId;
+                SELECT 
+                    di.instance_id AS InstanceId,
+                    di.instance_code AS InstanceCode,
+                    di.status_id AS StatusId,
+                    ISNULL(di.current_location, '') AS CurrentLocation,
+                    CASE 
+                        WHEN di.status_id = 2 AND br.user_id IS NOT NULL THEN ISNULL(u.fullname, '')
+                        ELSE REPLICATE('-', 3) 
+                    END AS Borrower,
+                    CASE 
+                        WHEN di.status_id = 2 AND br.request_date IS NOT NULL THEN
+                            CONVERT(varchar(10), br.request_date, 103) -- dd/MM/yyyy
+                            + N' (Tiết '
+                            + CAST(br.start_period AS varchar(10))
+                            + ' - '
+                            + CAST(br.end_period AS varchar(10))
+                            + ')'
+                        ELSE REPLICATE('-', 3) 
+                    END AS UsageDuration
+                FROM device_instance di
+                LEFT JOIN borrow_request br ON br.instance_id = di.instance_id
+                LEFT JOIN [user] u ON br.user_id = u.user_id
+                WHERE di.model_id = @modelId;
                 ",
                 async reader =>
                 {
@@ -34,10 +50,12 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                     {
                         instances.Add(new DeviceInstanceDto
                         {
-                            InstanceId = reader.GetInt32(reader.GetOrdinal("instance_id")),
-                            InstanceCode = reader.GetString(reader.GetOrdinal("instance_code")),
-                            StatusId = reader.GetInt32(reader.GetOrdinal("status_id")),
-                            CurrentLocation = reader.GetString(reader.GetOrdinal("current_location"))
+                            InstanceId = reader.GetInt32(reader.GetOrdinal("InstanceId")),
+                            InstanceCode = reader.GetString(reader.GetOrdinal("InstanceCode")),
+                            StatusId = reader.GetInt32(reader.GetOrdinal("StatusId")),
+                            CurrentLocation = reader.GetString(reader.GetOrdinal("CurrentLocation")),
+                            Borrower = reader.GetString(reader.GetOrdinal("Borrower")),
+                            UsageDuration = reader.GetString(reader.GetOrdinal("UsageDuration"))
                         });
                     }
                 },
@@ -46,7 +64,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
             return instances;
         }
 
-        public async Task<int?> GetAvailableInstanceByModelId(int id)
+        public async Task<int?> GetAvailableInstanceByModelId(int modelId)
         {
             return await _dbManager.ExecuteScalarAsync<int>(
                 @"
@@ -64,10 +82,36 @@ namespace ClassroomDeviceManagement.Repositories.Implements
 
                 AND s.name = 'Available';
                 ",
-                new SqlParameter("@modelId", id)
+                new SqlParameter("@modelId", modelId)
                 );
         }
-        
+
+        public async Task<DeviceInstance?> GetByIdAsync(int instanceId)
+        {
+            DeviceInstance? result = null;
+
+            await _dbManager.ExecuteQueryAsync(
+                @"SELECT * FROM device_instance WHERE instance_id = @instanceId",
+                async reader =>
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        result = new DeviceInstance
+                        {
+                            InstanceId = reader.GetInt32(reader.GetOrdinal("instance_id")),
+                            InstanceCode = reader.GetString(reader.GetOrdinal("instance_code")),
+                            ModelId = reader.GetInt32(reader.GetOrdinal("model_id")),
+                            StatusId = (InstanceStatus)reader.GetInt32(reader.GetOrdinal("status_id")),
+                            CurrentLocation = reader.GetString(reader.GetOrdinal("current_location"))
+                        };
+                    }
+                },
+                new SqlParameter("@instanceId", instanceId)
+            );
+
+            return result;
+        }
+
 
         public async Task<DeviceInstanceDto?> AddInstanceAsync(DeviceInstance instance)
         {
@@ -127,7 +171,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                 System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
                 return false;
             }
-  
+
         }
     }
 }

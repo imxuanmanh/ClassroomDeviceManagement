@@ -1,6 +1,6 @@
 ﻿using ClassroomDeviceManagement.Enums;
 
-namespace ClassroomDeviceManagement.ViewModels.BorrowRequest
+namespace ClassroomDeviceManagement.Dtos.BorrowRequest
 {
     public class RejectedRequestViewModel
     {

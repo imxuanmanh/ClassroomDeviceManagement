@@ -4,6 +4,8 @@ using ClassroomDeviceManagement.Managers;
 using ClassroomDeviceManagement.Enums;
 using Microsoft.Data.SqlClient;
 using ClassroomDeviceManagement.Repositories.Interfaces;
+using Microsoft.AspNetCore.Authentication;
+using ClassroomDeviceManagement.Dtos.BorrowRequest;
 using ClassroomDeviceManagement.ViewModels.BorrowRequest;
 
 namespace ClassroomDeviceManagement.Repositories.Implements
@@ -156,7 +158,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
         public async Task<IEnumerable<RejectedRequestViewModel>> GetRejectedBorrowRequestsAsync()
         {
             var results = new List<RejectedRequestViewModel>();
-            
+
             try
             {
                 await _dbManager.ExecuteQueryAsync(
@@ -212,7 +214,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
             return results;
 
         }
-        
+
         public async Task<IEnumerable<ReturnedRequestViewModel>> GetReturnedBorrowRequestsAsync()
         {
             var results = new List<ReturnedRequestViewModel>();
@@ -357,7 +359,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                     @"
                         DELETE FROM borrow_request WHERE request_id = @requestId
                     ",
-                    new SqlParameter("@requestId", requestId) 
+                    new SqlParameter("@requestId", requestId)
                 );
 
                 return (affectedRow > 0);
@@ -368,7 +370,76 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                 throw;
             }
         }
-        
+
+        public async Task<BorrowRequest?> GetByIdAsync(int requestId)
+        {
+            BorrowRequest? request = null;
+
+            try
+            {
+                await _dbManager.ExecuteQueryAsync(
+                    @"
+                    SELECT 
+                        request_id AS RequestId, 
+                        user_id AS UserId, 
+                        instance_id AS InstanceId, 
+                        request_date AS RequestDate, 
+                        start_period AS StartPeriod, 
+                        end_period AS EndPeriod, 
+                        approved_date AS ApprovedDate, 
+                        return_date AS ReturnDate, 
+                        usage_location AS UsageLocation, 
+                        status_id AS StatusId, 
+                        purpose AS Purpose
+                    FROM 
+                        borrow_request
+                    WHERE
+                        request_id = @requestId;",
+                    async reader =>
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            int requestIdOrdinal = reader.GetOrdinal("RequestId");
+                            int userIdOrdinal = reader.GetOrdinal("UserId");
+                            int instanceIdOrdinal = reader.GetOrdinal("InstanceId");
+                            int requestDateOrdinal = reader.GetOrdinal("RequestDate");
+                            int startPeriodOrdinal = reader.GetOrdinal("StartPeriod");
+                            int endPeriodOrdinal = reader.GetOrdinal("EndPeriod");
+                            int approvedDateOrdinal = reader.GetOrdinal("ApprovedDate");
+                            int returnDateOrdinal = reader.GetOrdinal("ReturnDate");
+                            int usageLocationOrdinal = reader.GetOrdinal("UsageLocation");
+                            int statusIdOrdinal = reader.GetOrdinal("StatusId");
+                            int purposeOrdinal = reader.GetOrdinal("Purpose");
+
+                            request = new BorrowRequest
+                            {
+                                RequestId = reader.GetInt32(requestIdOrdinal),
+                                UserId = reader.GetInt32(userIdOrdinal),
+                                InstanceId = reader.GetInt32(instanceIdOrdinal),
+                                RequestDate = reader.GetDateTime(requestDateOrdinal),
+                                StartPeriod = reader.GetByte(startPeriodOrdinal),
+                                EndPeriod = reader.GetByte(endPeriodOrdinal),
+                                ApprovedDate = reader.IsDBNull(approvedDateOrdinal) ? null : reader.GetDateTime(approvedDateOrdinal),
+                                ReturnDate = reader.IsDBNull(returnDateOrdinal) ? null : reader.GetDateTime(returnDateOrdinal),
+                                UsageLocation = reader.IsDBNull(usageLocationOrdinal) ? string.Empty : reader.GetString(usageLocationOrdinal),
+                                Status = (BorrowRequestStatus)reader.GetInt32(statusIdOrdinal),
+                                Purpose = reader.IsDBNull(purposeOrdinal) ? string.Empty : reader.GetString(purposeOrdinal)
+                            };
+                        }
+                    },
+                    new SqlParameter("@requestId", requestId)
+                );
+
+                return request;
+            }
+            catch (SqlException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
+                throw;
+            }
+        }
+
+
         public async Task<bool> UpdateBorrowRequestStatusAsync(int requestId, BorrowRequestStatus newStatus, DateTime? approvedDate = null, DateTime? returnDate = null)
         {
             try
@@ -396,7 +467,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
             {
                 System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
                 return false;
-            }  
+            }
         }
 
         public async Task<int?> GetInstanceIdByRequestIdAsync(int requestId)
@@ -414,7 +485,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                 );
             return instanceId;
         }
-        
+
         public async Task<IEnumerable<BorrowedDeviceInstanceDto>> GetInstanceByUserId(int userId)
         {
             var result = new List<BorrowedDeviceInstanceDto>();
@@ -445,7 +516,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                         int instanceCodeIndex = reader.GetOrdinal("InstanceCode");
                         int modelNameIndex = reader.GetOrdinal("ModelName");
 
-                        while(await reader.ReadAsync())
+                        while (await reader.ReadAsync())
                         {
                             result.Add(new BorrowedDeviceInstanceDto
                             {
@@ -458,7 +529,7 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                     new SqlParameter("@userId", userId)
                 );
             }
-            catch(SqlException ex)
+            catch (SqlException ex)
             {
                 System.Diagnostics.Debug.WriteLine($"SQL Error: {ex.Message}");
                 throw;

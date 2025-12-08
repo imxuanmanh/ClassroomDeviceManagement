@@ -133,7 +133,5 @@ namespace ClassroomDeviceManagement.Repositories.Implements
                 throw;
             }
         }
-    
-         
     }
 }

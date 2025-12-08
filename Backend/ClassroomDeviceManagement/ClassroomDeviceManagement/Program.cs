@@ -6,6 +6,7 @@ using ClassroomDeviceManagement.Services.Implements;
 using ClassroomDeviceManagement.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Diagnostics;
 using System.Text;
 
@@ -70,11 +71,38 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+    // Thêm cấu hình JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập 'Bearer' + token JWT. Ví dụ: 'Bearer eyJhbGciOiJI...'"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
 });
 
 
 // Đăng ký các class helper
 builder.Services.AddScoped<IDbManager, DbManager>();
+builder.Services.AddScoped<SseConnectionManager, SseConnectionManager>();
 
 // Đăng ký Repository
 builder.Services.AddScoped<IDeviceCategoryRepository, DeviceCategoryRepository>();
@@ -87,15 +115,20 @@ builder.Services.AddScoped<IBorrowRequestRepository, BorrowRequestRepository>();
 
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+
 // Đăng ký Services
 builder.Services.AddScoped<IDeviceCategoryService, DeviceCategoryService>();
 builder.Services.AddScoped<IDeviceModelService, DeviceModelService>();
-builder.Services.AddScoped<IDeviceInstanceService,  DeviceInstanceService>();
+builder.Services.AddScoped<IDeviceInstanceService, DeviceInstanceService>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<IBorrowRequestService,  BorrowRequestService>();
+builder.Services.AddScoped<IBorrowRequestService, BorrowRequestService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // Đăng ký Controllers
 builder.Services.AddControllers();
 

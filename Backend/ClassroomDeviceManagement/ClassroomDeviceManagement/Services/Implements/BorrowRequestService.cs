@@ -4,6 +4,7 @@ using ClassroomDeviceManagement.Dto.UserRequest;
 using ClassroomDeviceManagement.Models;
 using ClassroomDeviceManagement.Repositories.Interfaces;
 using ClassroomDeviceManagement.Services.Interfaces;
+using ClassroomDeviceManagement.Dtos.BorrowRequest;
 using ClassroomDeviceManagement.ViewModels.BorrowRequest;
 
 namespace ClassroomDeviceManagement.Services.Implements
@@ -12,11 +13,21 @@ namespace ClassroomDeviceManagement.Services.Implements
     {
         private readonly IBorrowRequestRepository _borrowRequestRepository;
         private readonly IDeviceInstanceRepository _deviceInstanceRepository;
+        private readonly IDeviceModelService _deviceModelService;
+        private readonly INotificationService _notificationService;
 
-        public BorrowRequestService(IBorrowRequestRepository borrowRequestRepository, IDeviceInstanceRepository deviceInstanceRepository)
+        public BorrowRequestService
+        (
+            IBorrowRequestRepository borrowRequestRepository,
+            IDeviceInstanceRepository deviceInstanceRepository,
+            IDeviceModelService deviceModelService,
+            INotificationService notificationService
+        )
         {
             _borrowRequestRepository = borrowRequestRepository;
             _deviceInstanceRepository = deviceInstanceRepository;
+            _deviceModelService = deviceModelService;
+            _notificationService = notificationService;
         }
 
         public async Task<BorrowRequestDto?> CreateBorrowRequestAsync(CreateBorrowRequestDto requestDto)
@@ -49,7 +60,7 @@ namespace ClassroomDeviceManagement.Services.Implements
         public async Task<IEnumerable<PendingRequestViewModel>> GetPendingBorrowRequestsAsync()
         {
             return await _borrowRequestRepository.GetPendingBorrowRequestsAsync();
-        }        
+        }
         public async Task<IEnumerable<ApprovedRequestViewModel>> GetApprovedBorrowRequestsAsync()
         {
             return await _borrowRequestRepository.GetApprovedBorrowRequestsAsync();
@@ -65,25 +76,51 @@ namespace ClassroomDeviceManagement.Services.Implements
 
         public async Task<bool> ApproveBorrowRequestAsync(int requestId)
         {
-            int? instanceId = await _borrowRequestRepository.GetInstanceIdByRequestIdAsync(requestId);
+            BorrowRequest? request = await _borrowRequestRepository.GetByIdAsync(requestId);
 
-            if (instanceId == null) return false;
+            if (request == null)
+            {
+                throw new InvalidOperationException($"BorrowRequest with ID {requestId} was not found.");
+            }
 
-            bool updateInstanceStatus = await _deviceInstanceRepository.ChangeInstanceStatus(instanceId.Value, Enums.InstanceStatus.Borrowed);
-            bool approvedRequest = await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Approved, DateTime.Now, null);
+            DeviceInstance? instance = await _deviceInstanceRepository.GetByIdAsync(request.InstanceId);
 
-            return updateInstanceStatus && approvedRequest;
+            if (instance == null)
+            {
+                throw new InvalidOperationException($"Instance with ID {request.InstanceId} was not found.");
+            }
 
-            // return await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Approved, DateTime.Now, null);
+            DeviceModelDto? model = await _deviceModelService.GetById(instance.ModelId);
+
+            if (model == null)
+            {
+                throw new InvalidOperationException($"Model with ID {instance.ModelId} was not found.");
+            }
+
+            // Cập nhật trạng thái của instance thành đã mượn
+            bool updateInstanceStatus = await _deviceInstanceRepository.ChangeInstanceStatus(instance.InstanceId, InstanceStatus.Borrowed);
+
+            // Cập nhật trạng thái của request thành đã đồng ý
+            bool approvedRequest = await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(request.RequestId, BorrowRequestStatus.Approved, DateTime.Now, null);
+
+            bool success = updateInstanceStatus && approvedRequest;
+
+            if (success)
+            {
+                int userId = request.UserId;
+                string content = $"Yêu cầu mượn thiết bị {model.ModelName} ({instance.InstanceCode}) đã được phê duyệt. Vui lòng đến phòng {model.StorageLocation} để nhận thiết bị";
+                await _notificationService.PushNotificationAsync(request.UserId, content);
+            }
+            return success;
         }
 
         public async Task<bool> RejectBorrowRequestAsync(int requestId)
         {
-             return await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Rejected, null, null);   
+            return await _borrowRequestRepository.UpdateBorrowRequestStatusAsync(requestId, Enums.BorrowRequestStatus.Rejected, null, null);
         }
-        
+
         public async Task<bool> ReturnBorrowRequestAsync(int requestId)
-        {        
+        {
             int? instanceId = await _borrowRequestRepository.GetInstanceIdByRequestIdAsync(requestId);
 
             if (instanceId == null) return false;

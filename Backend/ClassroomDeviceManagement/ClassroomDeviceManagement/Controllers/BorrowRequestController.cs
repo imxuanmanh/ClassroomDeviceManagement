@@ -1,4 +1,5 @@
 ﻿using ClassroomDeviceManagement.Dto;
+using ClassroomDeviceManagement.Dtos.BorrowRequest;
 using ClassroomDeviceManagement.Models;
 using ClassroomDeviceManagement.Repositories;
 using ClassroomDeviceManagement.Services.Interfaces;

@@ -1,5 +1,6 @@
 ﻿using ClassroomDeviceManagement.Dto;
 using ClassroomDeviceManagement.Dto.UserRequest;
+using ClassroomDeviceManagement.Dtos.BorrowRequest;
 using ClassroomDeviceManagement.Models;
 using ClassroomDeviceManagement.ViewModels.BorrowRequest;
 
